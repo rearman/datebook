@@ -32,8 +32,10 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.TextClock
 import android.widget.TextView
 import java.time.LocalDate
+import java.time.temporal.WeekFields
 import kotlin.math.abs
 
 /** The Date Book app. [TodoActivity] is the To Do List app; both use the same records. */
@@ -361,8 +363,13 @@ open class MainActivity : Activity() {
         root.addView(silkscreen(), LP(MATCH, dp(50)))
     }
 
-    private fun tab(h: LinearLayout, title: String) {
-        val t = label(title, bold = true).apply {
+    /** The black title tab. With [clock], it shows the current time and keeps it current. */
+    private fun tab(h: LinearLayout, title: String, clock: Boolean = false) {
+        val v = if (clock) TextClock(this).apply {
+            format12Hour = "h:mm a"; format24Hour = "H:mm"
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, Palm.textSp); typeface = Typeface.DEFAULT_BOLD
+        } else label(title, bold = true)
+        val t = v.apply {
             setTextColor(Palm.paper)
             val r = dp(7).toFloat()
             background = GradientDrawable().apply {
@@ -617,8 +624,10 @@ open class MainActivity : Activity() {
 
     private fun buildWeek(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
         val ws = day - Recur.dow(Fmt.ld(day))
-        tab(h, Fmt.dayTitle(ws))
+        val wd = Fmt.ld(ws)
+        tab(h, "${Fmt.monthShort[wd.monthValue - 1]} '${"%02d".format(wd.year % 100)}")
         h.addView(arrow(true) { stepDate(-1) })
+        h.addView(label("Week ${wd.get(WeekFields.SUNDAY_START.weekOfWeekBasedYear())}", bold = true))
         h.addView(arrow(false) { stepDate(1) })
 
         val col = vbox()
@@ -686,16 +695,14 @@ open class MainActivity : Activity() {
     }
 
     private fun buildAgenda(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
-        tab(h, "Agenda")
+        tab(h, "", clock = true)
+        val ld = Fmt.ld(day)
         h.addView(arrow(true) { stepDate(-1) })
+        h.addView(label("${Fmt.dowShort[Recur.dow(ld)]}, ${Fmt.monthShort[ld.monthValue - 1]} ${ld.dayOfMonth}", bold = true)
+            .apply { setOnClickListener { goDay(day, null) } })
         h.addView(arrow(false) { stepDate(1) })
 
         val col = vbox().apply { setPadding(dp(10), dp(6), dp(10), dp(10)) }
-        val ld = Fmt.ld(day)
-        col.addView(label(
-            "${Fmt.dowLong[Recur.dow(ld)]}, ${ld.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${ld.dayOfMonth}, ${ld.year}",
-            bold = true, size = Palm.textSp + 1
-        ).apply { setOnClickListener { goDay(day, null) } })
 
         val occs = dayOccs(day)
         if (occs.isEmpty()) col.addView(label("No appointments", size = Palm.textSp - 1).apply {
