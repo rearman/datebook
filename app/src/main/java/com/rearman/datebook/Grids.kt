@@ -153,7 +153,9 @@ class MonthGrid(
     private val first = LocalDate.of(year, month, 1)
     private val lead = Recur.dow(first)
     private val len = first.lengthOfMonth()
-    private val headH = ctx.ppf(11f)
+    /** Palm month grid: an 18 px band for the day letters, six 18 px weeks, 3 px side margins. */
+    private val headH = ctx.ppf(18f)
+    private val mx = ctx.ppf(3f)
     private val line = Paint().apply { color = Palm.INK; strokeWidth = ctx.ppf(1f) }
     private val thick = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Palm.INK; style = Paint.Style.STROKE; strokeWidth = ctx.ppf(1.5f)
@@ -177,7 +179,7 @@ class MonthGrid(
         override fun onDown(e: MotionEvent) = true
         override fun onSingleTapUp(e: MotionEvent): Boolean {
             if (e.y < headH) return true
-            val col = (e.x / (width / 7f)).toInt().coerceIn(0, 6)
+            val col = ((e.x - mx) / ((width - 2 * mx) / 7f)).toInt().coerceIn(0, 6)
             val row = ((e.y - headH) / cellH()).toInt().coerceIn(0, 5)
             val n = row * 7 + col - lead + 1
             if (n in 1..len) act.goDay(LocalDate.of(year, month, n).toEpochDay(), null)
@@ -187,28 +189,29 @@ class MonthGrid(
 
     private fun cellH() = (height - headH - line.strokeWidth) / 6f
 
-    // Palm month grid: an 11 px head and six 20 px weeks, plus one line width so the outer lines
-    // stay inside the view. It shrinks to fit when the screen has less room.
+    // The height adds one line width so the outer lines stay inside the view. It shrinks to fit
+    // when the screen has less room.
     override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(
         MeasureSpec.getSize(w),
-        resolveSize((headH + 6 * context.ppf(20f) + line.strokeWidth).toInt(), h)
+        resolveSize((headH + 6 * context.ppf(18f) + line.strokeWidth).toInt(), h)
     )
 
     override fun onDraw(c: Canvas) {
         c.drawColor(Palm.paper)
         val sw = line.strokeWidth
-        val cw = (width - sw) / 7f
+        val cw = (width - 2 * mx - sw) / 7f
+        val x0 = mx + sw / 2
         val ch = cellH()
-        for (i in 0..6) c.drawText(Fmt.dowLetter[i], sw / 2 + cw * i + cw / 2, headH - ctx(2.5f), head)
-        for (r in 0..6) { val y = headH + sw / 2 + r * ch; c.drawLine(0f, y, width.toFloat(), y, line) }
-        for (i in 0..7) { val x = sw / 2 + i * cw; c.drawLine(x, headH, x, height.toFloat(), line) }
+        for (i in 0..6) c.drawText(Fmt.dowLetter[i], x0 + cw * i + cw / 2, headH - ctx(7f), head)
+        for (r in 0..6) { val y = headH + sw / 2 + r * ch; c.drawLine(mx, y, width - mx, y, line) }
+        for (i in 0..7) { val x = x0 + i * cw; c.drawLine(x, headH, x, height.toFloat(), line) }
         val today = LocalDate.now().toEpochDay()
         val p = act.prefs
         for (n in 1..len) {
             val idx = n - 1 + lead
             val col = idx % 7
             val row = idx / 7
-            val x = sw / 2 + col * cw
+            val x = x0 + col * cw
             val y = headH + sw / 2 + row * ch
             val ep = LocalDate.of(year, month, n).toEpochDay()
             val label = n.toString()
