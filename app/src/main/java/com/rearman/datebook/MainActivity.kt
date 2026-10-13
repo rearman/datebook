@@ -9,9 +9,12 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorFilter
 import android.graphics.Paint
+import android.graphics.PixelFormat
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
@@ -349,7 +352,8 @@ open class MainActivity : Activity() {
         lastEdit = null
 
         val header = hbox()
-        header.setPadding(0, pp(1), pp(1), 0)
+        // Palm title: a 13 px tab row, then the 2 px line below it.
+        header.setPadding(0, 0, pp(1), 0)
         val content = FrameLayout(this)
         cmdButtons.clear()
         // View icons and command buttons, left aligned. Menu and Find are added at the right below.
@@ -471,10 +475,12 @@ open class MainActivity : Activity() {
         val (laneOf, nLanes) = lanes(timed)
         val barW = if (prefs.timeBars) pp(2) + nLanes * pp(3) else 0
         val timeW = timeColW(pp(3), pp(20))
-        // Rows are one 11 px Palm line. Time bar ticks meet the time text at its center.
+        // Rows are 11 px Palm lines, with the dotted underline inside the last px of each line.
+        // Time bar ticks meet the time text at its center.
         val mid = label("", bold = true).lineHeight / 2
 
-        val col = vbox()
+        // The Palm Day view has 3 px between the title line and the first row.
+        val col = vbox().apply { setPadding(0, pp(3), 0, 0) }
         var focusView: EditText? = null
         rows.forEachIndexed { idx, row ->
             val rowEnd = rows.drop(idx + 1).firstOrNull { !it.untimed }?.min
@@ -501,8 +507,10 @@ open class MainActivity : Activity() {
                 maxLines = 1
             }, LP(timeW, WRAP))
 
-            // The description and its icons, with a dotted underline from the time to the right edge.
+            // The description and its icons, with a dotted underline under each text line, from the
+            // time to the right edge.
             val slot = hbox(Gravity.TOP)
+            var slotEd: TextView? = null
             if (e != null && isMasked(e)) {
                 slot.addView(label("").apply {
                     background = box(Palm.LIGHT, Palm.LIGHT, 0f, 1f)
@@ -510,6 +518,7 @@ open class MainActivity : Activity() {
                 }, LP(0, pp(7), 1f).apply { topMargin = pp(2); marginEnd = pp(3) })
             } else {
                 val ed = rowEdit(e?.title ?: "").apply { setPadding(pp(1), 0, pp(1), 0) }
+                slotEd = ed
                 val key = if (e != null) "e${e.id}" else "s${row.min}"
                 ed.tag = key
                 ed.setOnFocusChangeListener { _, has ->
@@ -532,10 +541,8 @@ open class MainActivity : Activity() {
                     slot.addView(icons)
                 }
             }
-            r.addView(vbox().apply {
-                addView(slot, lp(MATCH))
-                addView(DottedLine(this@MainActivity, Palm.INK), LP(MATCH, pp(1)))
-            }, LP(0, WRAP, 1f))
+            slot.background = LinedBackground(this, slotEd)
+            r.addView(slot, LP(0, WRAP, 1f))
             col.addView(r, lp(MATCH))
         }
         val sv = ScrollView(this).apply { addView(col); isFillViewport = true }
@@ -1124,6 +1131,36 @@ class DottedLine(ctx: Context, color: Int = Palm.LIGHT) : View(ctx) {
         pathEffect = android.graphics.DashPathEffect(floatArrayOf(ctx.ppf(1f), ctx.ppf(1f)), 0f)
     }
     override fun onDraw(c: Canvas) { c.drawLine(0f, height / 2f, width.toFloat(), height / 2f, p) }
+}
+
+/**
+ * Palm dotted underlines for a Day view row: one under each text line of [ed], across the
+ * full row. With no editor (a masked record), one line at the bottom of the row.
+ */
+class LinedBackground(ctx: Context, private val ed: TextView?) : Drawable() {
+    private val p = Paint().apply {
+        color = Palm.INK; strokeWidth = ctx.ppf(1f)
+        pathEffect = android.graphics.DashPathEffect(floatArrayOf(ctx.ppf(1f), ctx.ppf(1f)), 0f)
+    }
+
+    override fun draw(c: Canvas) {
+        val b = bounds
+        val h = p.strokeWidth / 2
+        val layout = ed?.layout
+        if (ed == null || layout == null) {
+            c.drawLine(b.left.toFloat(), b.bottom - h, b.right.toFloat(), b.bottom - h, p)
+            return
+        }
+        for (i in 0 until layout.lineCount) {
+            val y = b.top + ed.top + ed.paddingTop + layout.getLineBottom(i) - h
+            c.drawLine(b.left.toFloat(), y, b.right.toFloat(), y, p)
+        }
+    }
+
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(colorFilter: ColorFilter?) {}
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity() = PixelFormat.TRANSLUCENT
 }
 
 /**
