@@ -398,12 +398,10 @@ class IconView(ctx: Context, private val kind: Int) : View(ctx) {
                 c.drawLine(cx, cy, cx, cy - s * 0.22f, paint)
                 c.drawLine(cx, cy, cx + s * 0.18f, cy, paint)
             }
-            REPEAT -> {
-                val r = android.graphics.RectF(m, m, s - m, s - m)
-                c.drawArc(r, 200f, 280f, false, paint)
-                val ax = s - m; val ay = s / 2
-                c.drawLine(ax, ay, ax - s * 0.15f, ay - s * 0.15f, paint)
-                c.drawLine(ax, ay, ax + s * 0.1f, ay - s * 0.17f, paint)
+            REPEAT -> { // Palm repeat symbol: two overlapping squares
+                val k = s * 0.55f
+                c.drawRect(m, m, m + k, m + k, paint)
+                c.drawRect(s - m - k, s - m - k, s - m, s - m, paint)
             }
         }
     }
