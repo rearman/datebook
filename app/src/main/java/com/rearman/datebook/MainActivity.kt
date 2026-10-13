@@ -361,8 +361,8 @@ open class MainActivity : Activity() {
         root.addView(View(this).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, dp(2)))
         root.addView(content, LP(MATCH, 0, 1f))
         bottom.addView(cmds, LP(0, WRAP, 1f))
-        bottom.addView(SilkIcon(this, false) { showMenu() })
-        bottom.addView(SilkIcon(this, true) { endEdit(); showFind() })
+        bottom.addView(ViewIcon(this, 4, false) { showMenu() }, lp().apply { marginEnd = dp(1) })
+        bottom.addView(ViewIcon(this, 5, false) { endEdit(); showFind() })
         root.addView(bottom, lp(MATCH))
     }
 
@@ -404,9 +404,10 @@ open class MainActivity : Activity() {
     }
 
     private fun cmd(cmds: LinearLayout, text: String, onClick: () -> Unit) {
+        // 32 dp tall with 4 dp above and below: the outline lines up with the view icon boxes.
         cmds.addView(palmButton(text, onClick).apply {
-            setPadding(dp(6), dp(5), dp(6), dp(5)); minWidth = dp(36)
-        }, lp().apply { marginStart = dp(3) })
+            setPadding(dp(6), 0, dp(6), 0); minWidth = dp(36)
+        }, LP(WRAP, dp(32)).apply { marginStart = dp(3); topMargin = dp(4); bottomMargin = dp(4) })
     }
 
     // ---------------- Day view ----------------

@@ -232,14 +232,17 @@ class MonthGrid(
     override fun onTouchEvent(event: MotionEvent): Boolean = gd.onTouchEvent(event) || super.onTouchEvent(event)
 }
 
-/** The four view icons at the bottom of the Date Book screens. */
+/**
+ * The icons in the bottom row: the four views (0 to 3), then Menu (4) and Find (5).
+ * Each is a 40 dp square that draws a box inside a 4 dp margin.
+ */
 @SuppressLint("ViewConstructor")
 class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean, onClick: () -> Unit) : View(ctx) {
     private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = ctx.dp(1.3f).toFloat() }
 
-    init { setOnClickListener { onClick() }; contentDescription = listOf("Day", "Week", "Month", "Agenda")[kind] }
+    init { setOnClickListener { onClick() }; contentDescription = listOf("Day", "Week", "Month", "Agenda", "Menu", "Find")[kind] }
 
-    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(context.dp(40), context.dp(36))
+    override fun onMeasure(w: Int, h: Int) { val s = context.dp(40); setMeasuredDimension(s, s) }
 
     override fun onDraw(c: Canvas) {
         val w = width.toFloat()
@@ -260,34 +263,23 @@ class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean,
             1 -> for (k in 0..3) dot(l + (r - l) * (k + 0.5f) / 4, h / 2) // Week: four dots across
             2 -> for (i in 0..3) for (j in 0..3) // Month: 4 by 4 grid of dots
                 dot(l + (r - l) * (i + 0.5f) / 4, t + (b - t) * (j + 0.5f) / 4)
-            else -> { // Agenda: a dot with two lines under it
+            3 -> { // Agenda: a dot with two lines under it
                 dot(w / 2, t + (b - t) * 0.2f)
                 p.style = Paint.Style.STROKE
                 c.drawLine(l, t + (b - t) * 0.6f, r, t + (b - t) * 0.6f, p)
                 c.drawLine(l, t + (b - t) * 0.9f, r, t + (b - t) * 0.9f, p)
             }
-        }
-    }
-}
-
-/** The Menu and Find icons at the right end of the command row. */
-@SuppressLint("ViewConstructor")
-class SilkIcon(ctx: Context, private val find: Boolean, onClick: () -> Unit) : View(ctx) {
-    private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; style = Paint.Style.STROKE; strokeWidth = ctx.dp(2f).toFloat()
-    }
-
-    init { setOnClickListener { onClick() }; contentDescription = if (find) "Find" else "Menu" }
-
-    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(context.dp(32), context.dp(36))
-
-    override fun onDraw(c: Canvas) {
-        val cx = width / 2f; val cy = height / 2f; val r = context.dp(7).toFloat()
-        if (find) { // magnifier
-            c.drawCircle(cx - r / 3, cy - r / 3, r, p)
-            c.drawLine(cx + r * 0.4f, cy + r * 0.4f, cx + r * 1.3f, cy + r * 1.3f, p)
-        } else for (k in -1..1) { // three lines
-            c.drawLine(cx - r * 1.3f, cy + k * r * 0.8f, cx + r * 1.3f, cy + k * r * 0.8f, p)
+            4 -> { // Menu: three lines
+                p.style = Paint.Style.STROKE
+                for (k in 0..2) { val y = t + (b - t) * (0.2f + 0.3f * k); c.drawLine(l, y, r, y, p) }
+            }
+            else -> { // Find: magnifier
+                p.style = Paint.Style.STROKE
+                val rr = (b - t) * 0.28f
+                val cx = w / 2 - rr / 3; val cy = h / 2 - rr / 3
+                c.drawCircle(cx, cy, rr, p)
+                c.drawLine(cx + rr * 0.7f, cy + rr * 0.7f, cx + rr * 1.7f, cy + rr * 1.7f, p)
+            }
         }
     }
 }
