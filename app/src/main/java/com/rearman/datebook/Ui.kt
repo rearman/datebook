@@ -321,7 +321,15 @@ fun Context.popupList(anchor: View, items: List<String>, selected: Int, onPick: 
     val maxH = resources.displayMetrics.heightPixels * 2 / 3
     sv.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
     if (sv.measuredHeight > maxH) pw.height = maxH
-    pw.showAsDropDown(anchor, 0, -anchor.height)
+    // Show at the trigger, moved left or up only as far as needed to stay on the screen.
+    val loc = IntArray(2)
+    anchor.getLocationOnScreen(loc)
+    val dm = resources.displayMetrics
+    val w = sv.measuredWidth
+    val h = minOf(sv.measuredHeight, maxH)
+    val x = loc[0].coerceIn(0, maxOf(0, dm.widthPixels - w))
+    val y = loc[1].coerceIn(0, maxOf(0, dm.heightPixels - h))
+    pw.showAtLocation(anchor, Gravity.NO_GRAVITY, x, y)
 }
 
 /** A message with buttons. Each button closes the dialog and then runs its action. */
