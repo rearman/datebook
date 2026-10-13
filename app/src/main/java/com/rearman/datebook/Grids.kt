@@ -253,22 +253,18 @@ class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean,
         c.drawRect(m, m, w - m, h - m, p)
         p.color = if (active) Palm.paper else Palm.INK
         val l = m + 3; val r = w - m - 3; val t = m + 3; val b = h - m - 3
+        val dr = context.dp(1.6f).toFloat()
+        fun dot(x: Float, y: Float) { p.style = Paint.Style.FILL; c.drawCircle(x, y, dr, p) }
         when (kind) {
-            0 -> { // Day: lines of a page
-                for (k in 0..3) { val y = t + (b - t) * k / 3f; c.drawLine(l, y, r, y, p) }
-            }
-            1 -> { // Week: seven columns
-                for (k in 0..7) { val x = l + (r - l) * k / 7f; c.drawLine(x, t, x, b, p) }
-            }
-            2 -> { // Month: grid
-                for (k in 0..3) { val y = t + (b - t) * k / 3f; c.drawLine(l, y, r, y, p) }
-                for (k in 0..4) { val x = l + (r - l) * k / 4f; c.drawLine(x, t, x, b, p) }
-            }
-            else -> { // Agenda: list with a check box
-                c.drawRect(l, t, l + 5, t + 5, p)
-                c.drawLine(l + 8, t + 3, r, t + 3, p)
-                c.drawLine(l, (t + b) / 2, r, (t + b) / 2, p)
-                c.drawLine(l, b - 2, r, b - 2, p)
+            0 -> dot(w / 2, h / 2) // Day: one dot in the center
+            1 -> for (k in 0..3) dot(l + (r - l) * (k + 0.5f) / 4, h / 2) // Week: four dots across
+            2 -> for (i in 0..3) for (j in 0..3) // Month: 4 by 4 grid of dots
+                dot(l + (r - l) * (i + 0.5f) / 4, t + (b - t) * (j + 0.5f) / 4)
+            else -> { // Agenda: a dot with two lines under it
+                dot(w / 2, t + (b - t) * 0.2f)
+                p.style = Paint.Style.STROKE
+                c.drawLine(l, t + (b - t) * 0.6f, r, t + (b - t) * 0.6f, p)
+                c.drawLine(l, t + (b - t) * 0.9f, r, t + (b - t) * 0.9f, p)
             }
         }
     }
