@@ -626,8 +626,12 @@ open class MainActivity : Activity() {
 
     private fun agendaTodos(): List<Todo> {
         val cat = prefs.todoCategory
+        // Items due on or before this day. Completed items show only when the
+        // To Do List shows them, and only on the day they were due or completed.
         return sortTodos(store.todos.filter {
-            !it.done && (cat < 0 || it.category == cat) && (it.due < 0 || it.due <= day) &&
+            (cat < 0 || it.category == cat) &&
+                (if (it.done) prefs.showCompleted && it.due == day else it.due <= day) &&
+                !(prefs.onlyDue && it.due < 0) &&
                 !(prefs.security == 2 && it.isPrivate)
         })
     }
@@ -675,16 +679,18 @@ open class MainActivity : Activity() {
             setTextColor(Palm.GRAY); setPadding(0, dp(6), 0, dp(6))
         })
         for (t in tds) {
-            val r = hbox()
-            r.addView(checkBox("", t.done) { b -> completeTodo(t, b) })
-            r.addView(label("${t.priority}", bold = true).apply { setPadding(0, 0, dp(8), 0) })
+            val r = hbox(Gravity.TOP)
+            r.addView(checkBox("", t.done) { b -> completeTodo(t, b) }, lp().apply { topMargin = dp(2) })
+            if (prefs.showPriorities) r.addView(todoPriorityLabel(t))
             if (isMasked(t)) r.addView(label("").apply {
                 background = box(Palm.LIGHT, Palm.LIGHT, 0f, 2f); setOnClickListener { revealAsk(t) }
-            }, LP(0, dp(18), 1f))
+            }, LP(0, dp(22), 1f).apply { topMargin = dp(8); marginEnd = dp(8) })
             else r.addView(label(t.title.ifBlank { "(no description)" }).apply {
+                setPadding(dp(2), dp(9), dp(4), dp(9))
                 setOnClickListener { openTodoApp(t.id) }
             }, LP(0, WRAP, 1f))
-            if (t.due in 0 until day) r.addView(label("!", bold = true).apply { setPadding(dp(6), 0, 0, 0) })
+            if (prefs.showDueDates) r.addView(todoDueLabel(t, day))
+            if (prefs.showCategories) r.addView(todoCategoryLabel(t))
             col.addView(r, lp(MATCH))
         }
         content.addView(ScrollView(this).apply { addView(col) })
@@ -718,6 +724,42 @@ open class MainActivity : Activity() {
         })
     }
 
+    /** Due date column, as set in Show options. One line; it sizes to its text. */
+    private fun todoDueLabel(t: Todo, ref: Long): TextView {
+        val late = !t.done && t.due in 0 until ref
+        val txt = if (t.due < 0) "–" else {
+            val d = Fmt.ld(t.due); "${d.monthValue}/${d.dayOfMonth}" + if (late) "!" else ""
+        }
+        return label(txt, bold = late).apply {
+            gravity = Gravity.END
+            maxLines = 1
+            setPadding(dp(6), dp(9), dp(4), dp(9))
+            setOnClickListener { tv -> endEdit(); pickDue(tv, t.due) { d -> t.due = d; saveTodo(t) } }
+        }
+    }
+
+    /** Category column, as set in Show options. One line, cut with "..." when long. */
+    private fun todoCategoryLabel(t: Todo): TextView =
+        label(store.categoryName(t.category), size = Palm.textSp - 2).apply {
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            maxWidth = dp(96)
+            setPadding(dp(6), dp(10), dp(8), dp(9))
+            setOnClickListener { tv ->
+                endEdit()
+                pickCategory(tv, t.category, includeAll = false) { id -> t.category = id; saveTodo(t) }
+            }
+        }
+
+    private fun todoPriorityLabel(t: Todo): TextView =
+        label("${t.priority}", bold = true).apply {
+            setPadding(dp(2), dp(9), dp(6), dp(9))
+            setOnClickListener { tv ->
+                endEdit()
+                popupList(tv, listOf("1", "2", "3", "4", "5"), t.priority - 1) { i -> t.priority = i + 1; saveTodo(t) }
+            }
+        }
+
     private fun completeTodo(t: Todo, done: Boolean) {
         t.done = done
         if (done && prefs.recordCompletion) t.due = today
@@ -741,13 +783,7 @@ open class MainActivity : Activity() {
         for (t in items) {
             val r = hbox(Gravity.TOP)
             r.addView(checkBox("", t.done) { b -> endEdit(); completeTodo(t, b) }, lp().apply { topMargin = dp(2) })
-            if (prefs.showPriorities) r.addView(label("${t.priority}", bold = true).apply {
-                setPadding(dp(2), dp(9), dp(6), dp(9))
-                setOnClickListener { tv ->
-                    endEdit()
-                    popupList(tv, listOf("1", "2", "3", "4", "5"), t.priority - 1) { i -> t.priority = i + 1; saveTodo(t) }
-                }
-            })
+            if (prefs.showPriorities) r.addView(todoPriorityLabel(t))
             if (isMasked(t)) {
                 r.addView(label("").apply {
                     background = box(Palm.LIGHT, Palm.LIGHT, 0f, 2f)
@@ -764,23 +800,8 @@ open class MainActivity : Activity() {
                 if (key == focusKey) focusView = ed
                 r.addView(ed, LP(0, WRAP, 1f))
             }
-            if (prefs.showDueDates) {
-                val txt = if (t.due < 0) "–" else {
-                    val d = Fmt.ld(t.due); "${d.monthValue}/${d.dayOfMonth}" + if (!t.done && t.due < today) "!" else ""
-                }
-                r.addView(label(txt, bold = !t.done && t.due in 0 until today).apply {
-                    gravity = Gravity.END
-                    setPadding(dp(4), dp(9), dp(6), dp(9))
-                    setOnClickListener { tv -> endEdit(); pickDue(tv, t.due) { d -> t.due = d; saveTodo(t) } }
-                }, LP(dp(54), WRAP))
-            }
-            if (prefs.showCategories) r.addView(label(store.categoryName(t.category).take(6), size = Palm.textSp - 2).apply {
-                setPadding(dp(2), dp(10), dp(8), dp(9))
-                setOnClickListener { tv ->
-                    endEdit()
-                    pickCategory(tv, t.category, includeAll = false) { id -> t.category = id; saveTodo(t) }
-                }
-            })
+            if (prefs.showDueDates) r.addView(todoDueLabel(t, today))
+            if (prefs.showCategories) r.addView(todoCategoryLabel(t))
             col.addView(r, lp(MATCH))
             col.addView(DottedLine(this), LP(MATCH, dp(1)))
         }
