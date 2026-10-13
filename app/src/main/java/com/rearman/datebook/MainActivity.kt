@@ -1168,10 +1168,12 @@ class MenuBar(
         frame.addView(titles, lp(MATCH))
         frame.addView(View(act).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, act.pp(1)))
         frame.addView(items, lp(MATCH))
+        // The menu fills the app area. A tap below the commands closes it.
+        frame.addView(View(act).apply { setOnClickListener { dismiss() } }, LP(MATCH, 0, 1f))
         setContentView(frame)
         window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         window?.setGravity(Gravity.TOP)
-        window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         draw()
     }
 

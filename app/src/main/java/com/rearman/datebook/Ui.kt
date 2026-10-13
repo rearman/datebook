@@ -244,14 +244,7 @@ class PushGroup(
     }
 }
 
-/** A scroll view that never grows taller than a set height. */
-class MaxScroll(ctx: Context, private val maxPx: Int) : ScrollView(ctx) {
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(maxPx, View.MeasureSpec.AT_MOST))
-    }
-}
-
-/** A Palm modal form: black title bar, bordered body, buttons along the bottom. */
+/** A Palm modal form that fills the app area: black title bar, bordered body, buttons along the bottom. */
 open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true) : Dialog(ctx) {
     val body: LinearLayout = ctx.vbox().apply { setPadding(ctx.pp(3), ctx.pp(2), ctx.pp(3), ctx.pp(1)) }
     val buttons: LinearLayout = ctx.hbox().apply { setPadding(ctx.pp(3), ctx.pp(2), ctx.pp(3), ctx.pp(3)) }
@@ -271,19 +264,16 @@ open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true) : Dia
         }
         frame.addView(bar, lp(MATCH))
         if (scroll) {
-            val sv = MaxScroll(ctx, ctx.resources.displayMetrics.heightPixels * 62 / 100)
+            val sv = ScrollView(ctx)
             sv.addView(body)
-            frame.addView(sv, lp(MATCH))
+            frame.addView(sv, LP(MATCH, 0, 1f))
         } else {
-            frame.addView(body, lp(MATCH))
+            frame.addView(body, LP(MATCH, 0, 1f))
         }
         frame.addView(buttons, lp(MATCH))
         setContentView(frame)
         window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        window?.setLayout(
-            (ctx.resources.displayMetrics.widthPixels - ctx.pp(4)),
-            WindowManager.LayoutParams.WRAP_CONTENT
-        )
+        window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
         window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
     }
 
