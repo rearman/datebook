@@ -833,7 +833,7 @@ open class MainActivity : Activity() {
         })
         for (t in items) {
             val r = hbox(Gravity.TOP)
-            r.addView(checkBox("", t.done) { b -> endEdit(); completeTodo(t, b) }, lp().apply { topMargin = pp(1) })
+            r.addView(checkBox("", t.done) { b -> endEdit(); completeTodo(t, b) }, lp().apply { topMargin = pp(1); marginStart = pp(2) })
             if (prefs.showPriorities) r.addView(todoPriorityLabel(t))
             if (isMasked(t)) {
                 r.addView(label("").apply {
