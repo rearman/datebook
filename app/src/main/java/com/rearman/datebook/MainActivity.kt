@@ -421,7 +421,7 @@ open class MainActivity : Activity() {
 
     /** Width of a time column: the widest time at the current font, plus [pad], and never below [min]. */
     private fun timeColW(pad: Int, min: Int): Int =
-        maxOf(min, label("", bold = true).paint.measureText("00:00").toInt() + pad + pp(1))
+        maxOf(min, label("", bold = true).paint.measureText("00:00").toInt() + pad)
 
     private fun viewIcons(cmds: LinearLayout) {
         for (k in 0..3) {
@@ -474,7 +474,7 @@ open class MainActivity : Activity() {
 
         val (laneOf, nLanes) = lanes(timed)
         val barW = if (prefs.timeBars) pp(2) + nLanes * pp(3) else 0
-        val timeW = timeColW(pp(3), pp(20))
+        val timeW = timeColW(pp(2), pp(20))
         // Rows are 11 px Palm lines, with the dotted underline inside the last px of each line.
         // Time bar ticks meet the time text at its center.
         val mid = label("", bold = true).lineHeight / 2
@@ -501,7 +501,7 @@ open class MainActivity : Activity() {
             }
             r.addView(label(timeText, bold = true).apply {
                 gravity = Gravity.END
-                setPadding(pp(1), 0, pp(2), 0)
+                setPadding(0, 0, pp(2), 0)
                 setTextColor(Palm.INK)
                 setOnClickListener { endEdit(); timeTapped(row) }
                 maxLines = 1
