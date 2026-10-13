@@ -834,7 +834,7 @@ open class MainActivity : Activity() {
     /** Due date column, as set in Show options. One line; it sizes to its text. */
     private fun todoDueLabel(t: Todo, ref: Long): TextView {
         val late = !t.done && t.due in 0 until ref
-        val txt = if (t.due < 0) "–" else {
+        val txt = if (t.due < 0) "-" else {
             val d = Fmt.ld(t.due); "${d.monthValue}/${d.dayOfMonth}" + if (late) "!" else ""
         }
         return label(txt, bold = late).apply {
@@ -843,6 +843,10 @@ open class MainActivity : Activity() {
             minWidth = label("", bold = true).paint.measureText("00/00!").toInt() + pp(3)
             maxLines = 1
             setPadding(pp(2), 0, pp(1), 0)
+            if (t.due < 0) {
+                // The no-date bar sits at the center of where a date would be.
+                setPadding(pp(2) + ((paint.measureText("00/00") - paint.measureText("-")) / 2).toInt(), 0, pp(1), 0)
+            }
             setOnClickListener { tv -> endEdit(); pickDue(tv, t.due) { d -> t.due = d; saveTodo(t) } }
         }
     }
