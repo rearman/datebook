@@ -31,6 +31,7 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.PopupWindow
 import android.widget.ScrollView
 import android.widget.TextClock
 import android.widget.TextView
@@ -72,6 +73,8 @@ open class MainActivity : Activity() {
     private var focusKey: String? = null
     private var lastEdit: EditText? = null
     private var weekSel: Occ? = null
+    /** The Week view event box, while it shows. */
+    private var eventBox: PopupWindow? = null
     private var pendingExport: String? = null
     private var afterExport: (() -> Unit)? = null
     private var swipeDir = 0
@@ -337,6 +340,7 @@ open class MainActivity : Activity() {
     // ---------------- screen ----------------
 
     fun render() {
+        eventBox?.dismiss(); eventBox = null
         Palm.apply(prefs)
         Fmt.h24 = DateFormat.is24HourFormat(this)
         root.removeAllViews()
@@ -647,11 +651,6 @@ open class MainActivity : Activity() {
         h.addView(arrow(false) { stepDate(1) })
 
         val col = vbox()
-        val desc = label("Tap an event to see it. Tap it again to open its day.", size = Palm.text - 1).apply {
-            setPadding(pp(3), pp(1), pp(3), pp(1))
-            setTextColor(Palm.GRAY)
-        }
-        col.addView(desc, lp(MATCH))
         val head = hbox().apply { setPadding(pp(12), 0, 0, pp(1)) }
         for (i in 0..6) {
             val d = ws + i
@@ -670,21 +669,42 @@ open class MainActivity : Activity() {
         col.addView(head, lp(MATCH))
         val grid = WeekGrid(this, this, ws) { o ->
             weekSel = o
-            if (o != null) {
-                desc.setTextColor(Palm.INK)
-                desc.text = "${Fmt.dowDate(o.day)}  ${Fmt.range(o.event)}\n${o.event.title.ifBlank { "(no description)" }}"
-            }
+            if (o != null) showEventBox(o)
         }
         val sv = ScrollView(this).apply { addView(grid) }
         col.addView(sv, LP(MATCH, 0, 1f))
         content.addView(col)
-        sv.post { sv.scrollTo(0, prefs.dayStart * pp(11)) }
+        sv.post { sv.scrollTo(0, (prefs.dayStart * grid.hourH).toInt()) }
 
         viewIcons(cmds)
         cmd(cmds, "Go to") { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
     }
 
     // ---------------- Month view ----------------
+
+    /**
+     * The Palm Week view event box: full width at the top of the screen for 3 seconds.
+     * Line 1: "Mon 26-10-12" at the left, "8:00 - 8:30" at the right. Line 2: the description.
+     */
+    private fun showEventBox(o: Occ) {
+        val e = o.event
+        val d = Fmt.ld(o.day)
+        val panel = vbox().apply {
+            background = box(Palm.paper, Palm.INK, 1f, 0f)
+            setPadding(pp(2), pp(1), pp(2), pp(1))
+        }
+        val top = hbox()
+        top.addView(label("${Fmt.dowShort[Recur.dow(d)]} ${"%02d-%02d-%02d".format(d.year % 100, d.monthValue, d.dayOfMonth)}"),
+            LP(0, WRAP, 1f))
+        if (!e.untimed) top.addView(label("${Fmt.timeShort(e.start)} - ${Fmt.timeShort(e.end)}"))
+        panel.addView(top, lp(MATCH))
+        panel.addView(label(e.title.ifBlank { "(no description)" }), lp(MATCH))
+        eventBox?.dismiss()
+        val pw = PopupWindow(panel, MATCH, WRAP, false)
+        eventBox = pw
+        pw.showAtLocation(root, Gravity.TOP, 0, 0)
+        root.postDelayed({ if (eventBox === pw) { pw.dismiss(); eventBox = null } }, 3000)
+    }
 
     private fun buildMonth(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
         val d = Fmt.ld(day)

@@ -34,7 +34,9 @@ class WeekGrid(
     private val weekStart: Long,
     private val onSelect: (Occ?) -> Unit
 ) : View(ctx) {
-    private val hourH = ctx.ppf(11f)
+    /** Height of one hour. onMeasure sets it so each two-hour cell is square. */
+    var hourH = ctx.ppf(11f)
+        private set
     private val gutter = ctx.ppf(12f)
     private val ink = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palm.INK; strokeWidth = ctx.ppf(1f) }
     private val thin = Paint().apply { color = Palm.INK; strokeWidth = 1f }
@@ -76,7 +78,9 @@ class WeekGrid(
     private fun colAt(x: Float): Int = if (x < gutter) -1 else ((x - gutter) / colW()).toInt().coerceIn(0, 6)
 
     override fun onMeasure(w: Int, h: Int) {
-        setMeasuredDimension(MeasureSpec.getSize(w), (hourH * 24).toInt() + 2)
+        val wPx = MeasureSpec.getSize(w)
+        hourH = (wPx - gutter) / 7f / 2f
+        setMeasuredDimension(wPx, (hourH * 24).toInt() + 2)
     }
 
     override fun onDraw(c: Canvas) {
