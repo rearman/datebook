@@ -56,7 +56,36 @@ data class Todo(
     var isPrivate: Boolean = false
 )
 
-data class Category(val id: Int, var name: String)
+/** A category of one app: [app] 0 is To Do, 1 is Memo Pad. */
+data class Category(val id: Int, var name: String, val app: Int = 0)
+
+/** A Memo Pad record. Its first line is its title in the Memo List. */
+data class Memo(
+    var id: Long = 0,
+    var text: String = "",
+    var category: Int = 0,
+    var isPrivate: Boolean = false,
+    var pos: Int = 0
+) {
+    val title: String get() = text.lineSequence().firstOrNull()?.trim().orEmpty()
+}
+
+/** Memo List order: by first line (ignoring case) when [alphabetic], else by manual position. */
+fun memoOrder(memos: List<Memo>, alphabetic: Boolean): List<Memo> =
+    if (alphabetic) memos.sortedWith(compareBy<Memo>({ it.title.lowercase() }, { it.pos }, { it.id }))
+    else memos.sortedWith(compareBy<Memo>({ it.pos }, { it.id }))
+
+/**
+ * Moves the memo at [from] to [to] in [ordered] (the full list in manual order) and numbers
+ * the positions 0 up in the new order. Returns the memos whose position changed.
+ */
+fun moveMemo(ordered: List<Memo>, from: Int, to: Int): List<Memo> {
+    val list = ordered.toMutableList()
+    list.add(to, list.removeAt(from))
+    val changed = mutableListOf<Memo>()
+    list.forEachIndexed { i, m -> if (m.pos != i) { m.pos = i; changed.add(m) } }
+    return changed
+}
 
 /** An event as it appears on one particular day. */
 data class Occ(val event: Event, val day: Long)

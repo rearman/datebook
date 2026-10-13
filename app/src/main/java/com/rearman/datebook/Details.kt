@@ -220,38 +220,43 @@ fun MainActivity.showShowOptions() {
     d.show()
 }
 
-fun MainActivity.showEditCategories() {
+/**
+ * Edit Categories dialog for one app.
+ *
+ * [app] 0 edits the To Do categories, 1 the Memo Pad categories.
+ */
+fun MainActivity.showEditCategories(app: Int = 0) {
     val d = PalmDialog(this, "Edit Categories")
     val list = vbox()
     fun fill() {
         list.removeAllViews()
-        for (cat in store.categories) {
+        for (cat in store.categoriesFor(app)) {
             list.addView(label(cat.name).apply {
                 setPadding(pp(3), pp(3), pp(3), pp(3))
-                setOnClickListener { renameCategory(cat) { fill() } }
+                setOnClickListener { renameCategory(cat, app) { fill() } }
             }, lp(LinearLayout.LayoutParams.MATCH_PARENT))
         }
-        if (store.categories.isEmpty()) list.addView(label("No categories"))
+        if (store.categoriesFor(app).isEmpty()) list.addView(label("No categories"))
     }
     fill()
     d.add(label("Tap a category to rename or delete it.", size = Palm.text))
     d.add(list)
     d.button("OK") { d.dismiss(); render() }
     d.button("New") {
-        if (store.categories.size >= Store.MAX_CATEGORIES) toast("You can have only 15 categories.")
-        else renameCategory(null) { fill() }
+        if (store.categoriesFor(app).size >= Store.MAX_CATEGORIES) toast("You can have only 15 categories.")
+        else renameCategory(null, app) { fill() }
     }
     d.show()
 }
 
-private fun MainActivity.renameCategory(cat: Category?, after: () -> Unit) {
+private fun MainActivity.renameCategory(cat: Category?, app: Int, after: () -> Unit) {
     val d = PalmDialog(this, if (cat == null) "New Category" else "Rename Category")
     val f = field(cat?.name ?: "", "Category name")
     d.add(f)
     d.button("OK") {
         val n = f.text.toString().trim()
         if (n.isNotEmpty()) {
-            if (cat == null) store.addCategory(n) else store.renameCategory(cat, n)
+            if (cat == null) store.addCategory(n, app) else store.renameCategory(cat, n)
         }
         d.dismiss(); after()
     }
