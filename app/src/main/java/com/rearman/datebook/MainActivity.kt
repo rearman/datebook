@@ -544,7 +544,7 @@ open class MainActivity : Activity() {
             r.addView(slot, LP(0, WRAP, 1f))
             col.addView(r, lp(MATCH))
         }
-        val sv = ScrollView(this).apply { addView(col); isFillViewport = true }
+        val sv = ScrollView(this).apply { addView(col); isFillViewport = true; isVerticalScrollBarEnabled = false }
         content.addView(sv)
         focusView?.let { f ->
             f.post { f.requestFocus(); f.setSelection(f.text.length) }
@@ -685,7 +685,7 @@ open class MainActivity : Activity() {
             head.addView(cell, LP(0, WRAP, 1f))
         }
         col.addView(head, lp(MATCH))
-        val sv = ScrollView(this).apply { addView(grid) }
+        val sv = ScrollView(this).apply { addView(grid); isVerticalScrollBarEnabled = false }
         col.addView(sv, LP(MATCH, 0, 1f))
         content.addView(col)
 
@@ -805,7 +805,7 @@ open class MainActivity : Activity() {
             if (prefs.showCategories) r.addView(todoCategoryLabel(t))
             col.addView(r, lp(MATCH))
         }
-        content.addView(ScrollView(this).apply { addView(col) })
+        content.addView(ScrollView(this).apply { addView(col); isVerticalScrollBarEnabled = false })
         viewIcons(cmds)
         cmd(cmds, "Go to") { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
     }
@@ -932,7 +932,7 @@ open class MainActivity : Activity() {
             if (prefs.showCategories) r.addView(todoCategoryLabel(t))
             col.addView(r, lp(MATCH))
         }
-        content.addView(ScrollView(this).apply { addView(col); isFillViewport = true })
+        content.addView(ScrollView(this).apply { addView(col); isFillViewport = true; isVerticalScrollBarEnabled = false })
         focusView?.let { f -> f.post { f.requestFocus(); f.setSelection(f.text.length) } }
 
         cmd(cmds, "New") { endEdit(); newTodo() }

@@ -296,7 +296,7 @@ open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true) : Dia
         }
         frame.addView(bar, lp(MATCH))
         if (scroll) {
-            val sv = ScrollView(ctx)
+            val sv = ScrollView(ctx).apply { isVerticalScrollBarEnabled = false }
             sv.addView(body)
             frame.addView(sv, LP(MATCH, 0, 1f))
         } else {
@@ -338,7 +338,7 @@ fun Context.popupList(anchor: View, items: List<String>, selected: Int, onPick: 
         background = box(Palm.paper, Palm.INK, 1f, 1.5f)
         setPadding(pp(1), pp(1), pp(1), pp(1))
     }
-    val sv = ScrollView(this).apply { addView(col) }
+    val sv = ScrollView(this).apply { addView(col); isVerticalScrollBarEnabled = false }
     val pw = PopupWindow(sv, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true)
     items.forEachIndexed { i, s ->
         val tv = label(s, bold = i == selected).apply {
