@@ -194,10 +194,10 @@ object Fmt {
 
     fun ld(day: Long): LocalDate = LocalDate.ofEpochDay(day)
 
-    /** Palm Day-view title: "Oct 12, 26". */
+    /** Day view title, "YY MMM D": "26 Oct 13", "26 Oct 5". */
     fun dayTitle(day: Long): String {
         val d = ld(day)
-        return "${monthShort[d.monthValue - 1]} ${d.dayOfMonth}, ${"%02d".format(d.year % 100)}"
+        return "${"%02d".format(d.year % 100)} ${monthShort[d.monthValue - 1]} ${d.dayOfMonth}"
     }
 
     /** "10/12/26". */
