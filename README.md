@@ -19,6 +19,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - Week view: a seven-day time grid. Tap an event to see its description. Tap it again to open its day. Touch and hold an event to edit it.
 - Month view: marks for timed events, untimed events (+) and daily repeating events (dashed line).
 - Agenda view: the events for one day, plus the To Do items that are due.
+- Swipe left for the next day, week or month. Swipe right for the previous one. In Day view, a swipe moves one day and the arrows move one week.
 - Event Details: time, date, alarm, repeat, private and note.
 - Repeat: daily, weekly (on selected days), monthly by day or by date, yearly, with an optional end date. For changes to a repeating event, select Current or All. For deletions, select Current, Future or All.
 - Alarms ring while the app is closed. Preferences set the alarm preset, the number of reminders and the interval. Snooze adds 5 minutes.

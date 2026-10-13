@@ -18,7 +18,9 @@ import android.os.Bundle
 import android.text.InputType
 import android.text.format.DateFormat
 import android.util.TypedValue
+import android.view.GestureDetector
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
@@ -32,6 +34,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import java.time.LocalDate
+import kotlin.math.abs
 
 /** The Date Book app. [TodoActivity] is the To Do List app; both use the same records. */
 open class MainActivity : Activity() {
@@ -47,6 +50,9 @@ open class MainActivity : Activity() {
         const val MONTH = 2
         const val AGENDA = 3
         const val TODO = 4
+        // A swipe must move this far and this fast to change the date.
+        private const val SWIPE_MIN_DP = 80
+        private const val SWIPE_MIN_SPEED_DP = 300 // per second
     }
 
     lateinit var store: Store
@@ -66,6 +72,7 @@ open class MainActivity : Activity() {
     private var weekSel: Occ? = null
     private var pendingExport: String? = null
     private var afterExport: (() -> Unit)? = null
+    private var swipeDir = 0
 
     private val today: Long get() = LocalDate.now().toEpochDay()
 
@@ -130,6 +137,43 @@ open class MainActivity : Activity() {
             TODO, DAY -> super.onBackPressed()
             else -> { mode = DAY; render() }
         }
+    }
+
+    // ---------------- swipe ----------------
+
+    /** A horizontal swipe in a date view sets [swipeDir]: 1 for next, -1 for previous. */
+    private val swipe by lazy {
+        GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
+                if (e1 == null || mode == TODO) return false
+                val dx = e2.x - e1.x
+                val dy = e2.y - e1.y
+                if (abs(dx) < dp(SWIPE_MIN_DP) || abs(dx) < 2 * abs(dy) || abs(vx) < dp(SWIPE_MIN_SPEED_DP)) return false
+                swipeDir = if (dx < 0) 1 else -1
+                return true
+            }
+        })
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (!swipe.onTouchEvent(ev)) return super.dispatchTouchEvent(ev)
+        // Cancel the gesture for the views under the finger, so that no tap fires.
+        ev.action = MotionEvent.ACTION_CANCEL
+        super.dispatchTouchEvent(ev)
+        stepDate(swipeDir)
+        return true
+    }
+
+    /** Moves one day (Day, Agenda), one week or one month forward (1) or back (-1). */
+    private fun stepDate(dir: Int) {
+        endEdit()
+        when (mode) {
+            DAY, AGENDA -> { day += dir; selected = null }
+            WEEK -> { day += 7L * dir; weekSel = null }
+            MONTH -> day = Fmt.ld(day).plusMonths(dir.toLong()).toEpochDay()
+            else -> return
+        }
+        render()
     }
 
     // ---------------- shared helpers used by the views and dialogs ----------------
@@ -568,8 +612,8 @@ open class MainActivity : Activity() {
     private fun buildWeek(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
         val ws = day - Recur.dow(Fmt.ld(day))
         tab(h, Fmt.dayTitle(ws))
-        h.addView(arrow(true) { day -= 7; weekSel = null; render() })
-        h.addView(arrow(false) { day += 7; weekSel = null; render() })
+        h.addView(arrow(true) { stepDate(-1) })
+        h.addView(arrow(false) { stepDate(1) })
 
         val col = vbox()
         val desc = label("Tap an event to see it. Tap it again to open its day.", size = Palm.textSp - 2).apply {
@@ -614,8 +658,8 @@ open class MainActivity : Activity() {
     private fun buildMonth(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
         val d = Fmt.ld(day)
         tab(h, "${Fmt.monthShort[d.monthValue - 1]} ${d.year}")
-        h.addView(arrow(true) { day = Fmt.ld(day).minusMonths(1).toEpochDay(); render() })
-        h.addView(arrow(false) { day = Fmt.ld(day).plusMonths(1).toEpochDay(); render() })
+        h.addView(arrow(true) { stepDate(-1) })
+        h.addView(arrow(false) { stepDate(1) })
         content.addView(MonthGrid(this, this, d.year, d.monthValue),
             FrameLayout.LayoutParams(MATCH, MATCH))
         viewIcons(cmds)
@@ -638,8 +682,8 @@ open class MainActivity : Activity() {
 
     private fun buildAgenda(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
         tab(h, "Agenda")
-        h.addView(arrow(true) { day -= 1; render() })
-        h.addView(arrow(false) { day += 1; render() })
+        h.addView(arrow(true) { stepDate(-1) })
+        h.addView(arrow(false) { stepDate(1) })
 
         val col = vbox().apply { setPadding(dp(10), dp(6), dp(10), dp(10)) }
         val ld = Fmt.ld(day)
