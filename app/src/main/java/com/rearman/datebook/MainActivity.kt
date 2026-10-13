@@ -676,12 +676,11 @@ open class MainActivity : Activity() {
 
     private fun agendaTodos(): List<Todo> {
         val cat = prefs.todoCategory
-        // Items due on or before this day. Completed items show only when the
-        // To Do List shows them, and only on the day they were due or completed.
+        // All open items. Completed items show only when the To Do List shows
+        // them, and only on the day they were due or completed.
         return sortTodos(store.todos.filter {
             (cat < 0 || it.category == cat) &&
-                (if (it.done) prefs.showCompleted && it.due == day else it.due <= day) &&
-                !(prefs.onlyDue && it.due < 0) &&
+                (!it.done || (prefs.showCompleted && it.due == day)) &&
                 !(prefs.security == 2 && it.isPrivate)
         })
     }
@@ -726,7 +725,7 @@ open class MainActivity : Activity() {
         })
         col.addView(th, lp(MATCH))
         val tds = agendaTodos()
-        if (tds.isEmpty()) col.addView(label("No items due", size = Palm.textSp - 1).apply {
+        if (tds.isEmpty()) col.addView(label("No open items",size = Palm.textSp - 1).apply {
             setTextColor(Palm.GRAY); setPadding(0, dp(6), 0, dp(6))
         })
         for (t in tds) {

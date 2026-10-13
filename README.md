@@ -18,7 +18,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - Day view: time lines from the start time to the end time, time bars for overlapping events, untimed events at the top, and note, alarm and repeat icons. Tap a line and type to make an event. With Show Time Bars, an event that ends between hours gets an empty line at its end time.
 - Week view: a seven-day time grid. Tap an event to see its description. Tap it again to open its day. Touch and hold an event to edit it.
 - Month view: marks for timed events, untimed events (+) and daily repeating events (dashed line).
-- Agenda view: the events for one day, plus the To Do items that are due.
+- Agenda view: the events for one day, plus all open To Do items.
 - Swipe left for the next day, week or month. Swipe right for the previous one. In Day view, a swipe moves one day and the arrows move one week.
 - Event Details: time, date, alarm, repeat, private and note.
 - Repeat: daily, weekly (on selected days), monthly by day or by date, yearly, with an optional end date. For changes to a repeating event, select Current or All. For deletions, select Current, Future or All.
