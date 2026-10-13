@@ -48,6 +48,7 @@ open class MainActivity : Activity() {
         const val EXTRA_EVENT = "event"
         const val EXTRA_SELECT = "select"
         const val EXTRA_TODO = "todo"
+        const val EXTRA_MEMO = "memo"
         private const val REQ_EXPORT = 11
         private const val REQ_IMPORT = 12
         const val DAY = 0
@@ -55,6 +56,7 @@ open class MainActivity : Activity() {
         const val MONTH = 2
         const val AGENDA = 3
         const val TODO = 4
+        const val MEMO = 5
         // A swipe must move this far and this fast to change the date.
         private const val SWIPE_MIN_DP = 80
         private const val SWIPE_MIN_SPEED_DP = 300 // per second
@@ -66,6 +68,10 @@ open class MainActivity : Activity() {
     private var mode = DAY
     /** True in the To Do List app. */
     protected open val isTodoApp = false
+    /** True in the Memo Pad app. */
+    protected open val isMemoApp = false
+    /** The memo open in the Memo Pad memo view, or null for the Memo List. */
+    internal var memoOpen: Memo? = null
     /** Private records the user chose to see while records are masked ("e12", "t5"). */
     val revealed = mutableSetOf<String>()
 
@@ -73,7 +79,7 @@ open class MainActivity : Activity() {
     private var selected: Occ? = null
     private var selectedTodo: Todo? = null
     private var focusKey: String? = null
-    private var lastEdit: EditText? = null
+    internal var lastEdit: EditText? = null
     private var weekSel: Occ? = null
     /** The Week view event box, while it shows. */
     private var eventBox: PopupWindow? = null
@@ -91,7 +97,7 @@ open class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         store = Store.get(this)
         prefs = Prefs(this)
-        mode = if (isTodoApp) TODO else prefs.lastView
+        mode = if (isMemoApp) MEMO else if (isTodoApp) TODO else prefs.lastView
         root = vbox().apply { isFocusableInTouchMode = true }
         setContentView(root)
         handleIntent(intent)
@@ -117,6 +123,12 @@ open class MainActivity : Activity() {
 
     private fun handleIntent(i: Intent?) {
         if (i == null) return
+        if (i.hasExtra(EXTRA_MEMO)) {
+            val mid = i.getLongExtra(EXTRA_MEMO, 0)
+            memoOpen = store.memos.firstOrNull { it.id == mid }
+            if (memoOpen != null) prefs.memoCategory = -1
+            i.removeExtra(EXTRA_MEMO)
+        }
         if (i.hasExtra(EXTRA_TODO)) {
             val tid = i.getLongExtra(EXTRA_TODO, 0)
             selectedTodo = store.todos.firstOrNull { it.id == tid }
@@ -154,7 +166,7 @@ open class MainActivity : Activity() {
     private val swipe by lazy {
         GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
-                if (e1 == null || mode == TODO) return false
+                if (e1 == null || mode == TODO || mode == MEMO) return false
                 val dx = e2.x - e1.x
                 val dy = e2.y - e1.y
                 if (abs(dx) < dp(SWIPE_MIN_DP) || abs(dx) < 2 * abs(dy) || abs(vx) < dp(SWIPE_MIN_SPEED_DP)) return false
@@ -192,12 +204,16 @@ open class MainActivity : Activity() {
 
     fun isMasked(e: Event) = prefs.security == 1 && e.isPrivate && !revealed.contains("e${e.id}")
     private fun isMasked(t: Todo) = prefs.security == 1 && t.isPrivate && !revealed.contains("t${t.id}")
+    internal fun isMasked(m: Memo) = prefs.security == 1 && m.isPrivate && !revealed.contains("m${m.id}")
 
     fun revealAsk(e: Event) =
         ask("Private Record", "Show this private record?", "Show" to { revealed.add("e${e.id}"); render() }, "Cancel" to {})
 
     private fun revealAsk(t: Todo) =
         ask("Private Record", "Show this private record?", "Show" to { revealed.add("t${t.id}"); render() }, "Cancel" to {})
+
+    internal fun revealAsk(m: Memo) =
+        ask("Private Record", "Show this private record?", "Show" to { revealed.add("m${m.id}"); render() }, "Cancel" to {})
 
     fun goDay(d: Long, occ: Occ?) {
         day = d; mode = DAY; prefs.lastView = DAY; selected = occ
@@ -289,6 +305,13 @@ open class MainActivity : Activity() {
         startActivity(i)
     }
 
+    /** Switches to the Memo Pad app. */
+    fun openMemoApp(memoId: Long?) {
+        val i = Intent(this, MemoActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (memoId != null) i.putExtra(EXTRA_MEMO, memoId)
+        startActivity(i)
+    }
+
     /** Switches to the Date Book app. */
     fun openDateBook(d: Long?, eventId: Long?) {
         val i = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -315,25 +338,25 @@ open class MainActivity : Activity() {
         }
     }
 
-    fun pickCategory(anchor: View, cur: Int, includeAll: Boolean, cb: (Int) -> Unit) {
+    fun pickCategory(anchor: View, cur: Int, includeAll: Boolean, app: Int = 0, cb: (Int) -> Unit) {
         val ids = mutableListOf<Int>()
         val names = mutableListOf<String>()
         if (includeAll) { ids.add(-1); names.add("All") }
         ids.add(0); names.add("Unfiled")
-        store.categories.forEach { ids.add(it.id); names.add(it.name) }
+        store.categoriesFor(app).forEach { ids.add(it.id); names.add(it.name) }
         names.add("Edit Categories...")
         popupList(anchor, names, ids.indexOf(cur)) { i ->
-            if (i < ids.size) cb(ids[i]) else showEditCategories()
+            if (i < ids.size) cb(ids[i]) else showEditCategories(app)
         }
     }
 
-    private fun hideKeyboard() {
+    internal fun hideKeyboard() {
         val imm = getSystemService(InputMethodManager::class.java)
         imm.hideSoftInputFromWindow(root.windowToken, 0)
     }
 
     /** Ends any edit in progress, so that typed text is saved. */
-    private fun endEdit() {
+    internal fun endEdit() {
         focusKey = null
         root.requestFocus()
         hideKeyboard()
@@ -364,6 +387,7 @@ open class MainActivity : Activity() {
             WEEK -> buildWeek(header, content, cmds)
             MONTH -> buildMonth(header, content, cmds)
             AGENDA -> buildAgenda(header, content, cmds)
+            MEMO -> if (memoOpen != null) buildMemoEdit(header, content, cmds) else buildMemoList(header, content, cmds)
             else -> buildTodo(header, content, cmds)
         }
 
@@ -394,7 +418,7 @@ open class MainActivity : Activity() {
     }
 
     /** The black title tab. With [clock], it shows the current time and keeps it current. */
-    private fun tab(h: LinearLayout, title: String, clock: Boolean = false) {
+    internal fun tab(h: LinearLayout, title: String, clock: Boolean = false) {
         val v = if (clock) TextClock(this).apply {
             format12Hour = "h:mm a"; format24Hour = "H:mm"
             setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text)); includeFontPadding = false; typeface = Palm.typeface(this@MainActivity, true)
@@ -430,7 +454,7 @@ open class MainActivity : Activity() {
         }
     }
 
-    private fun cmd(cmds: LinearLayout, text: String, onClick: () -> Unit) {
+    internal fun cmd(cmds: LinearLayout, text: String, onClick: () -> Unit) {
         // 11 Palm px tall with 1 px above and below: the 13 px bottom row of the Palm.
         val b = palmButton(text, onClick).apply {
             setPadding(pp(3), 0, pp(3), 0); minWidth = pp(16)
@@ -606,7 +630,7 @@ open class MainActivity : Activity() {
         }.show()
     }
 
-    private fun showKeyboardSoon() {
+    internal fun showKeyboardSoon() {
         root.postDelayed({
             currentFocus?.let { getSystemService(InputMethodManager::class.java).showSoftInput(it, 0) }
         }, 250)
@@ -812,7 +836,7 @@ open class MainActivity : Activity() {
 
     // ---------------- To Do List ----------------
 
-    private fun categoryLabel(id: Int) = if (id < 0) "All" else store.categoryName(id)
+    internal fun categoryLabel(id: Int) = if (id < 0) "All" else store.categoryName(id)
 
     private fun sortTodos(list: List<Todo>): List<Todo> {
         val dueKey = { t: Todo -> if (t.due < 0) Long.MAX_VALUE else t.due }
@@ -978,7 +1002,13 @@ open class MainActivity : Activity() {
 
     private fun showMenu() {
         val todo = mode == TODO
-        val record: List<Pair<String, () -> Unit>> = if (todo) listOf(
+        val memo = mode == MEMO
+        val record: List<Pair<String, () -> Unit>> = if (memo) listOf(
+            "New Memo" to { newMemo() },
+            "Delete Memo..." to { memoOpen?.let { deleteMemoAsk(it) } ?: toast("Open a memo first.") },
+            "Export Backup..." to { exportFile("datebook-backup", store.exportJson()) },
+            "Import Backup..." to { importFile() }
+        ) else if (todo) listOf(
             "New Item" to { newTodo() },
             "Delete Item..." to { selectedTodo?.let { deleteTodo(it) } ?: toast("Select an item first.") },
             "Attach Note" to { selectedTodo?.let { openTodoNote(it) } ?: toast("Select an item first.") },
@@ -1017,7 +1047,13 @@ open class MainActivity : Activity() {
                     ?: toast("Tap a line of text first.")
             }
         )
-        val options: List<Pair<String, () -> Unit>> = if (todo) listOf(
+        val options: List<Pair<String, () -> Unit>> = if (memo) listOf(
+            "Font..." to { showFont() },
+            "Preferences..." to { showMemoPreferences() },
+            "Edit Categories..." to { showEditCategories(1) },
+            "Security..." to { showSecurity() },
+            "About Memo Pad" to { showMemoAbout() }
+        ) else if (todo) listOf(
             "Font..." to { showFont() },
             "Edit Categories..." to { showEditCategories() },
             "Security..." to { showSecurity() },
@@ -1065,6 +1101,9 @@ open class MainActivity : Activity() {
         val tds = store.todos.filter {
             !(hideP && it.isPrivate) && (it.title.contains(q, true) || it.note.contains(q, true))
         }
+        val memos = store.memos.filter {
+            !(hideP && it.isPrivate) && it.text.contains(q, true)
+        }
         fun result(text: String, onClick: () -> Unit) =
             d.add(label(text).apply { setPadding(pp(3), pp(3), pp(1.5f), pp(3)); setOnClickListener { d.dismiss(); onClick() } }, 0)
         d.add(label("Date Book", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
@@ -1072,7 +1111,7 @@ open class MainActivity : Activity() {
         for (e in evs) {
             val shown = nextOccurrence(e)
             result("${Fmt.shortDate(shown)}  ${e.title.ifBlank { "(no description)" }}") {
-                if (isTodoApp) openDateBook(shown, e.id) else goDay(shown, Occ(e, shown))
+                if (isTodoApp || isMemoApp) openDateBook(shown, e.id) else goDay(shown, Occ(e, shown))
             }
         }
         d.add(label("To Do List", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
@@ -1080,6 +1119,13 @@ open class MainActivity : Activity() {
         for (t in tds) {
             result(t.title.ifBlank { "(no description)" }) {
                 if (isTodoApp) { prefs.todoCategory = -1; selectedTodo = t; render() } else openTodoApp(t.id)
+            }
+        }
+        d.add(label("Memo Pad", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
+        if (memos.isEmpty()) d.add(label("  No matches"), 0)
+        for (m in memos) {
+            result(m.title.ifBlank { "(no description)" }) {
+                if (isMemoApp) { prefs.memoCategory = -1; memoOpen = m; render() } else openMemoApp(m.id)
             }
         }
         d.button("Done") { d.dismiss() }
@@ -1139,9 +1185,9 @@ open class MainActivity : Activity() {
             REQ_IMPORT -> {
                 try {
                     val text = contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) } ?: ""
-                    val (ne, nt) = store.importJson(text)
+                    val (ne, nt, nm) = store.importJson(text)
                     changed()
-                    ask("Import", "Added $ne events and $nt To Do items.", "OK" to {})
+                    ask("Import", "Added $ne events, $nt To Do items and $nm memos.", "OK" to {})
                 } catch (ex: Exception) {
                     ask("Import", "This file is not a Date Book backup.", "OK" to {})
                 }
@@ -1153,9 +1199,10 @@ open class MainActivity : Activity() {
 /**
  * Palm dotted underlines: one under each text line of [ed]. As the background of a row it
  * spans the row; as the background of [ed] itself it spans the field. With no editor (a
- * masked record), one line at the bottom.
+ * masked record), one line at the bottom. With [fill], the lines continue to the bottom, as on a
+ * Memo Pad page.
  */
-class LinedBackground(ctx: Context, private val ed: TextView?) : Drawable() {
+class LinedBackground(ctx: Context, private val ed: TextView?, private val fill: Boolean = false) : Drawable() {
     private val p = Paint().apply {
         color = Palm.INK; strokeWidth = ctx.ppf(1f)
         pathEffect = android.graphics.DashPathEffect(floatArrayOf(ctx.ppf(1f), ctx.ppf(1f)), 0f)
@@ -1173,6 +1220,15 @@ class LinedBackground(ctx: Context, private val ed: TextView?) : Drawable() {
         for (i in 0 until layout.lineCount) {
             val y = b.top + off + ed.paddingTop + layout.getLineBottom(i) - h
             c.drawLine(b.left.toFloat(), y, b.right.toFloat(), y, p)
+        }
+        if (fill) {
+            // Lines below the text, one per editor line height, down to the bottom of the bounds.
+            val step = ed.lineHeight.toFloat()
+            var y = b.top + off + ed.paddingTop + layout.getLineBottom(layout.lineCount - 1) - h + step
+            while (step > 0 && y <= b.bottom) {
+                c.drawLine(b.left.toFloat(), y, b.right.toFloat(), y, p)
+                y += step
+            }
         }
     }
 

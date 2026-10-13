@@ -1,6 +1,6 @@
-# Date Book and To Do List
+# Date Book, To Do List and Memo Pad
 
-Two Android apps after the Palm OS 3.5 Date Book and To Do List. One APK installs both apps. Each app has its own icon. The two apps use the same records, so the Date Book Agenda view shows your To Do items.
+Three Android apps after the Palm OS 3.5 Date Book, To Do List and Memo Pad. One APK installs all three apps. Each app has its own icon. The Date Book and To Do List apps use the same records, so the Date Book Agenda view shows your To Do items. All three apps keep their records in one file on the phone.
 
 ## Build the APK with GitHub
 
@@ -29,6 +29,21 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - Priority 1 to 5, due date, category, private and note.
 - Show options: sort order, completed items, only due items, completion date, and the columns to show.
 - Up to 15 categories.
+
+### Memo Pad
+
+- Memo List shows the memos. Use the All or category pop-up to select a category.
+- Each memo title is numbered. The title is the first line of the memo.
+- Tap New to make a memo.
+- Sort: manual or alphabetic. Select Options, then Preferences to set the sort order.
+- Manual sort: touch and hold a memo, then drag it to move it.
+- Memo view shows "Memo N of M". The page has a full page of dotted lines. A memo can have up to 4,096 characters.
+- Memo view has the Done and Details buttons.
+- Details: Category, Private and Delete.
+- The text is saved as you type. An empty memo is deleted.
+- Memo Pad has its own categories. Select Edit Categories in Options.
+- Find searches the memos.
+- Export Backup and Import Backup include the memos.
 
 ### Both
 

@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Date Book</string>
     <string name="todo_name">To Do List</string>
+    <string name="memo_name">Memo Pad</string>
 </resources>
