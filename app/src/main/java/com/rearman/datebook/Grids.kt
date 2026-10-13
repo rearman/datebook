@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.RectF
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -166,6 +167,8 @@ class MonthGrid(
     private val num = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Palm.INK; textSize = ctx.ppf(Palm.text); typeface = Palm.typeface(ctx, true)
     }
+    /** Height of a digit in the number font (7 px in the Palm font). */
+    private val capH = Rect().also { num.getTextBounds("0", 0, 1, it) }.let { -it.top.toFloat() }
     private val head = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Palm.INK; textSize = ctx.ppf(Palm.text); typeface = Palm.typeface(ctx, true); textAlign = Paint.Align.CENTER
     }
@@ -217,13 +220,15 @@ class MonthGrid(
             val y = headH + sw / 2 + row * ch
             val ep = LocalDate.of(year, month, n).toEpochDay()
             val label = n.toString()
+            // The number sits 2 px below the cell line, as on the Palm.
+            val base = y + ctx(2.5f) + capH
             if (ep == today) {
                 val w = num.measureText(label)
-                c.drawRect(x + ctx(1f), y + ctx(1f), x + w + ctx(3f), y + num.textSize + ctx(2f), fill)
+                c.drawRect(x + ctx(1f), y + ctx(1.5f), x + w + ctx(3f), base + ctx(1.5f), fill)
                 num.color = Palm.paper
-                c.drawText(label, x + ctx(1.5f), y + num.textSize + ctx(1f), num)
+                c.drawText(label, x + ctx(1.5f), base, num)
                 num.color = Palm.INK
-            } else c.drawText(label, x + ctx(1.5f), y + num.textSize + ctx(1f), num)
+            } else c.drawText(label, x + ctx(1.5f), base, num)
             if (ep == act.day) c.drawRect(x + ctx(0.75f), y + ctx(0.75f), x + cw - ctx(0.75f), y + ch - ctx(0.75f), thick)
 
             val occs = act.dayOccs(ep)
@@ -238,8 +243,9 @@ class MonthGrid(
                 if (e.untimed) { if (p.monthUntimed) untimed = true }
                 else if (p.monthTimed) bands[when { e.start < 12 * 60 -> 0; e.start < 18 * 60 -> 1; else -> 2 }] = true
             }
-            val top = y + num.textSize + ctx(2.5f)
-            val avail = y + ch - ctx(2.5f) - top
+            // Timed events: marks on the right side, over the full cell height.
+            val top = y + ctx(2f)
+            val avail = ch - ctx(4f)
             for (b in 0..2) if (bands[b]) {
                 val by = top + avail * b / 3f
                 c.drawRect(x + cw - ctx(4f), by, x + cw - ctx(1.5f), by + minOf(ctx(2f), avail / 3f), fill)
