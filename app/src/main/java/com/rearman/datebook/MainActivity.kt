@@ -492,7 +492,7 @@ open class MainActivity : Activity() {
             r.addView(label(timeText, bold = true).apply {
                 gravity = Gravity.END
                 setPadding(pp(1), 0, pp(2), 0)
-                setTextColor(if (e == null) Palm.GRAY else Palm.INK)
+                setTextColor(Palm.INK)
                 setOnClickListener { endEdit(); timeTapped(row) }
                 maxLines = 1
             }, LP(timeW, WRAP))
@@ -662,9 +662,9 @@ open class MainActivity : Activity() {
                 if (d == today) background = box(Palm.INK, Palm.INK, 0f, 1f)
             }
             val fg = if (d == today) Palm.paper else Palm.INK
-            cell.addView(label(Fmt.dowLetter[i], bold = true, size = Palm.text - 1).apply { setTextColor(fg) })
-            cell.addView(label(Fmt.ld(d).dayOfMonth.toString(), bold = true).apply { setTextColor(fg) })
-            cell.addView(label("◆".repeat(minOf(untimed, 3)), size = 6f).apply { setTextColor(fg) })
+            cell.addView(label(Fmt.dowLetter[i], bold = true, size = Palm.text - 1).apply { setTextColor(fg); gravity = Gravity.CENTER })
+            cell.addView(label(Fmt.ld(d).dayOfMonth.toString(), bold = true).apply { setTextColor(fg); gravity = Gravity.CENTER })
+            cell.addView(label("◆".repeat(minOf(untimed, 3)), size = 6f).apply { setTextColor(fg); gravity = Gravity.CENTER })
             head.addView(cell, LP(0, WRAP, 1f))
         }
         col.addView(head, lp(MATCH))
@@ -721,8 +721,8 @@ open class MainActivity : Activity() {
         val col = vbox().apply { setPadding(pp(4), pp(2.5f), pp(4), pp(4)) }
 
         val occs = dayOccs(day)
-        if (occs.isEmpty()) col.addView(label("No appointments", size = Palm.text - 1).apply {
-            setTextColor(Palm.GRAY); setPadding(0, pp(2.5f), 0, pp(2.5f))
+        if (occs.isEmpty()) col.addView(label("No Appointments Today", size = Palm.text - 1).apply {
+            setPadding(0, pp(2.5f), 0, pp(2.5f))
         })
         val timeW = timeColW(pp(3), pp(19))
         for (o in occs) {
@@ -749,7 +749,7 @@ open class MainActivity : Activity() {
         col.addView(th, lp(MATCH))
         val tds = agendaTodos()
         if (tds.isEmpty()) col.addView(label("No open items",size = Palm.text - 1).apply {
-            setTextColor(Palm.GRAY); setPadding(0, pp(2.5f), 0, pp(2.5f))
+            setPadding(0, pp(2.5f), 0, pp(2.5f))
         })
         for (t in tds) {
             val r = hbox(Gravity.TOP)

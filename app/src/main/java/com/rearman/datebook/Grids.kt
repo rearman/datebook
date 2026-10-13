@@ -37,7 +37,7 @@ class WeekGrid(
     private val hourH = ctx.ppf(11f)
     private val gutter = ctx.ppf(12f)
     private val ink = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palm.INK; strokeWidth = ctx.ppf(1f) }
-    private val thin = Paint().apply { color = Palm.LIGHT; strokeWidth = 1f }
+    private val thin = Paint().apply { color = Palm.INK; strokeWidth = 1f }
     private val fill = Paint().apply { color = Palm.GRAY }
     private val shade = Paint().apply { color = 0x14000000 }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -86,7 +86,8 @@ class WeekGrid(
         // Shade the hours outside the day's start and end times.
         c.drawRect(gutter, 0f, width.toFloat(), p.dayStart * hourH, shade)
         c.drawRect(gutter, p.dayEnd * hourH, width.toFloat(), 24 * hourH, shade)
-        for (h in 0..24) {
+        // A line and a label at each even hour only.
+        for (h in 0..24 step 2) {
             val y = h * hourH
             c.drawLine(gutter, y, width.toFloat(), y, thin)
             if (h < 24) {
