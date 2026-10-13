@@ -30,7 +30,6 @@ object Palm {
     const val INK = Color.BLACK
     const val GRAY = 0xFF808080.toInt()
     const val LIGHT = 0xFFC4C4C4.toInt()
-    const val SILK = 0xFF3A3A3A.toInt()
     var paper = Color.WHITE
     var textSp = 15f
 

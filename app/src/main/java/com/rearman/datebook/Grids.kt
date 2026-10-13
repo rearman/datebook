@@ -239,19 +239,20 @@ class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean,
 
     init { setOnClickListener { onClick() }; contentDescription = listOf("Day", "Week", "Month", "Agenda")[kind] }
 
-    override fun onMeasure(w: Int, h: Int) { val s = context.dp(30); setMeasuredDimension(s, s) }
+    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(context.dp(40), context.dp(36))
 
     override fun onDraw(c: Canvas) {
-        val s = width.toFloat()
+        val w = width.toFloat()
+        val h = height.toFloat()
         val m = context.dp(4).toFloat()
         p.style = Paint.Style.FILL
         p.color = if (active) Palm.INK else Palm.paper
-        c.drawRect(m, m, s - m, s - m, p)
+        c.drawRect(m, m, w - m, h - m, p)
         p.style = Paint.Style.STROKE
         p.color = Palm.INK
-        c.drawRect(m, m, s - m, s - m, p)
+        c.drawRect(m, m, w - m, h - m, p)
         p.color = if (active) Palm.paper else Palm.INK
-        val l = m + 3; val r = s - m - 3; val t = m + 3; val b = s - m - 3
+        val l = m + 3; val r = w - m - 3; val t = m + 3; val b = h - m - 3
         when (kind) {
             0 -> { // Day: lines of a page
                 for (k in 0..3) { val y = t + (b - t) * k / 3f; c.drawLine(l, y, r, y, p) }
@@ -269,6 +270,28 @@ class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean,
                 c.drawLine(l, (t + b) / 2, r, (t + b) / 2, p)
                 c.drawLine(l, b - 2, r, b - 2, p)
             }
+        }
+    }
+}
+
+/** The Menu and Find icons at the right end of the command row. */
+@SuppressLint("ViewConstructor")
+class SilkIcon(ctx: Context, private val find: Boolean, onClick: () -> Unit) : View(ctx) {
+    private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Palm.INK; style = Paint.Style.STROKE; strokeWidth = ctx.dp(2f).toFloat()
+    }
+
+    init { setOnClickListener { onClick() }; contentDescription = if (find) "Find" else "Menu" }
+
+    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(context.dp(32), context.dp(36))
+
+    override fun onDraw(c: Canvas) {
+        val cx = width / 2f; val cy = height / 2f; val r = context.dp(7).toFloat()
+        if (find) { // magnifier
+            c.drawCircle(cx - r / 3, cy - r / 3, r, p)
+            c.drawLine(cx + r * 0.4f, cy + r * 0.4f, cx + r * 1.3f, cy + r * 1.3f, p)
+        } else for (k in -1..1) { // three lines
+            c.drawLine(cx - r * 1.3f, cy + k * r * 0.8f, cx + r * 1.3f, cy + k * r * 0.8f, p)
         }
     }
 }

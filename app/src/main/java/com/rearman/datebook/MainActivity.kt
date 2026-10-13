@@ -345,8 +345,9 @@ open class MainActivity : Activity() {
         val header = hbox()
         header.setPadding(0, dp(4), dp(4), 0)
         val content = FrameLayout(this)
+        // View icons and command buttons, left aligned. Menu and Find are added at the right below.
         val cmds = hbox()
-        cmds.setPadding(dp(6), dp(6), dp(6), dp(6))
+        val bottom = hbox().apply { setPadding(dp(6), dp(4), dp(4), dp(4)) }
 
         when (mode) {
             DAY -> buildDay(header, content, cmds)
@@ -359,8 +360,10 @@ open class MainActivity : Activity() {
         root.addView(header, lp(MATCH))
         root.addView(View(this).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, dp(2)))
         root.addView(content, LP(MATCH, 0, 1f))
-        root.addView(cmds, lp(MATCH))
-        root.addView(silkscreen(), LP(MATCH, dp(50)))
+        bottom.addView(cmds, LP(0, WRAP, 1f))
+        bottom.addView(SilkIcon(this, false) { showMenu() })
+        bottom.addView(SilkIcon(this, true) { endEdit(); showFind() })
+        root.addView(bottom, lp(MATCH))
     }
 
     /** The black title tab. With [clock], it shows the current time and keeps it current. */
@@ -398,32 +401,12 @@ open class MainActivity : Activity() {
                 endEdit(); mode = k; prefs.lastView = k; render()
             }, lp().apply { marginEnd = dp(1) })
         }
-        cmds.addView(View(this), LP(0, 1, 1f))
     }
 
     private fun cmd(cmds: LinearLayout, text: String, onClick: () -> Unit) {
         cmds.addView(palmButton(text, onClick).apply {
-            setPadding(dp(9), dp(5), dp(9), dp(5)); minWidth = dp(40)
-        }, lp().apply { marginStart = dp(5) })
-    }
-
-    /** The silk-screened buttons below a Palm screen. */
-    private fun silkscreen(): LinearLayout {
-        val bar = hbox().apply { setBackgroundColor(Palm.SILK); setPadding(dp(6), dp(6), dp(6), dp(6)) }
-        fun key(text: String, onClick: () -> Unit) {
-            bar.addView(TextView(this).apply {
-                this.text = text
-                gravity = Gravity.CENTER
-                setTextColor(Color.WHITE)
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-                typeface = Typeface.DEFAULT_BOLD
-                background = box(Palm.SILK, 0xFF9A9A9A.toInt(), 1.2f, 18f)
-                setOnClickListener { onClick() }
-            }, LP(0, MATCH, 1f).apply { marginStart = dp(3); marginEnd = dp(3) })
-        }
-        key("Menu") { showMenu() }
-        key("Find") { endEdit(); showFind() }
-        return bar
+            setPadding(dp(6), dp(5), dp(6), dp(5)); minWidth = dp(36)
+        }, lp().apply { marginStart = dp(3) })
     }
 
     // ---------------- Day view ----------------

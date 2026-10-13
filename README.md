@@ -33,8 +33,8 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 ### Both
 
 - The view icons at the bottom of Date Book select Day, Week, Month or Agenda.
-- **Menu** (or a tap on the title tab) opens the Record, Edit and Options menus.
-- **Find** searches the descriptions and notes of all records.
+- **Menu** (the three-line icon at the bottom right, or a tap on the title tab) opens the Record, Edit and Options menus.
+- **Find** (the magnifier icon at the bottom right) searches the descriptions and notes of all records.
 - Font, Security (show, mask or hide private records), Purge, and a Green LCD screen option.
 - Export Backup and Import Backup save and load all records as a JSON file.
 
