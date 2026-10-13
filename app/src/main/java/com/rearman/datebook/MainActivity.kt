@@ -75,6 +75,8 @@ open class MainActivity : Activity() {
     private var pendingExport: String? = null
     private var afterExport: (() -> Unit)? = null
     private var swipeDir = 0
+    /** The command buttons of the current screen, for [fitButtons]. */
+    private val cmdButtons = mutableListOf<TextView>()
 
     private val today: Long get() = LocalDate.now().toEpochDay()
 
@@ -345,6 +347,7 @@ open class MainActivity : Activity() {
         val header = hbox()
         header.setPadding(0, pp(1), pp(1), 0)
         val content = FrameLayout(this)
+        cmdButtons.clear()
         // View icons and command buttons, left aligned. Menu and Find are added at the right below.
         val cmds = hbox()
         val bottom = hbox().apply { setPadding(pp(1), 0, pp(1), 0) }
@@ -361,9 +364,26 @@ open class MainActivity : Activity() {
         root.addView(View(this).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, pp(2)))
         root.addView(content, LP(MATCH, 0, 1f))
         bottom.addView(cmds, LP(0, WRAP, 1f))
-        bottom.addView(ViewIcon(this, 4, false) { showMenu() }, lp().apply { marginEnd = pp(1) })
-        bottom.addView(ViewIcon(this, 5, false) { endEdit(); showFind() })
+        bottom.addView(ViewIcon(this, 4, false) { showMenu() })
+        bottom.addView(ViewIcon(this, 5, false) { endEdit(); showFind() }, lp().apply { marginStart = -pp(1) })
+        fitButtons(bottom)
         root.addView(bottom, lp(MATCH))
+    }
+
+    /**
+     * Shrinks the command button text when the bottom row is wider than the screen
+     * (Large font, or the Day view with all its buttons). Limit: it measures one time, at
+     * the full screen width, so in split-screen mode the row can still be cut off.
+     */
+    private fun fitButtons(bottom: LinearLayout) {
+        if (cmdButtons.isEmpty()) return
+        val spec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        bottom.measure(spec, spec)
+        val over = bottom.measuredWidth - resources.displayMetrics.widthPixels
+        if (over <= 0) return
+        val textW = cmdButtons.sumOf { it.paint.measureText(it.text.toString()).toDouble() }.toFloat()
+        val f = maxOf(0.5f, (textW - over) / textW)
+        cmdButtons.forEach { it.setTextSize(TypedValue.COMPLEX_UNIT_PX, it.textSize * f) }
     }
 
     /** The black title tab. With [clock], it shows the current time and keeps it current. */
@@ -399,15 +419,17 @@ open class MainActivity : Activity() {
         for (k in 0..3) {
             cmds.addView(ViewIcon(this, k, mode == k) {
                 endEdit(); mode = k; prefs.lastView = k; render()
-            }, lp().apply { marginEnd = pp(1) })
+            }, lp().apply { if (k > 0) marginStart = -pp(1) })
         }
     }
 
     private fun cmd(cmds: LinearLayout, text: String, onClick: () -> Unit) {
         // 11 Palm px tall with 1 px above and below: the 13 px bottom row of the Palm.
-        cmds.addView(palmButton(text, onClick).apply {
+        val b = palmButton(text, onClick).apply {
             setPadding(pp(3), 0, pp(3), 0); minWidth = pp(16)
-        }, LP(WRAP, pp(11)).apply { marginStart = pp(2); topMargin = pp(1); bottomMargin = pp(1) })
+        }
+        cmdButtons.add(b)
+        cmds.addView(b, LP(WRAP, pp(11)).apply { marginStart = pp(2); topMargin = pp(1); bottomMargin = pp(1) })
     }
 
     // ---------------- Day view ----------------

@@ -240,7 +240,8 @@ class MonthGrid(
 
 /**
  * The icons in the bottom row: the four views (0 to 3), then Menu (4) and Find (5).
- * Each icon is a 13 Palm px square that draws an 11 px box inside a 1 px margin.
+ * Each icon is 12 Palm px wide and 13 tall, with an 11 px tall box. The box has no side
+ * margin, so icons placed with a -1 px margin share one border line, as Palm push buttons do.
  */
 @SuppressLint("ViewConstructor")
 class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean, onClick: () -> Unit) : View(ctx) {
@@ -248,21 +249,22 @@ class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean,
 
     init { setOnClickListener { onClick() }; contentDescription = listOf("Day", "Week", "Month", "Agenda", "Menu", "Find")[kind] }
 
-    override fun onMeasure(w: Int, h: Int) { val s = context.pp(13); setMeasuredDimension(s, s) }
+    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(context.pp(12), context.pp(13))
 
     override fun onDraw(c: Canvas) {
         val w = width.toFloat()
         val h = height.toFloat()
         val m = context.ppf(1f)
+        val mx = p.strokeWidth / 2
         p.style = Paint.Style.FILL
         p.color = if (active) Palm.INK else Palm.paper
-        c.drawRect(m, m, w - m, h - m, p)
+        c.drawRect(mx, m, w - mx, h - m, p)
         p.style = Paint.Style.STROKE
         p.color = Palm.INK
-        c.drawRect(m, m, w - m, h - m, p)
+        c.drawRect(mx, m, w - mx, h - m, p)
         p.color = if (active) Palm.paper else Palm.INK
         val g = context.ppf(1f)
-        val l = m + g; val r = w - m - g; val t = m + g; val b = h - m - g
+        val l = mx + g; val r = w - mx - g; val t = m + g; val b = h - m - g
         val dr = context.ppf(0.8f)
         fun dot(x: Float, y: Float) { p.style = Paint.Style.FILL; c.drawCircle(x, y, dr, p) }
         when (kind) {
