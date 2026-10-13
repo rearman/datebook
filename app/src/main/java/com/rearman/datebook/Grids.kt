@@ -168,26 +168,31 @@ class MonthGrid(
         }
     })
 
-    private fun cellH() = (height - headH) / 6f
+    private fun cellH() = (height - headH - line.strokeWidth) / 6f
 
-    // Palm month grid: an 11 px head and six 20 px weeks.
-    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(MeasureSpec.getSize(w), (headH + 6 * context.ppf(20f)).toInt())
+    // Palm month grid: an 11 px head and six 20 px weeks, plus one line width so the outer lines
+    // stay inside the view. It shrinks to fit when the screen has less room.
+    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(
+        MeasureSpec.getSize(w),
+        resolveSize((headH + 6 * context.ppf(20f) + line.strokeWidth).toInt(), h)
+    )
 
     override fun onDraw(c: Canvas) {
         c.drawColor(Palm.paper)
-        val cw = width / 7f
+        val sw = line.strokeWidth
+        val cw = (width - sw) / 7f
         val ch = cellH()
-        for (i in 0..6) c.drawText(Fmt.dowLetter[i], cw * i + cw / 2, headH - ctx(2.5f), head)
-        for (r in 0..6) c.drawLine(0f, headH + r * ch, width.toFloat(), headH + r * ch, line)
-        for (i in 0..7) c.drawLine(minOf(i * cw, width - 1f), headH, minOf(i * cw, width - 1f), height.toFloat(), line)
+        for (i in 0..6) c.drawText(Fmt.dowLetter[i], sw / 2 + cw * i + cw / 2, headH - ctx(2.5f), head)
+        for (r in 0..6) { val y = headH + sw / 2 + r * ch; c.drawLine(0f, y, width.toFloat(), y, line) }
+        for (i in 0..7) { val x = sw / 2 + i * cw; c.drawLine(x, headH, x, height.toFloat(), line) }
         val today = LocalDate.now().toEpochDay()
         val p = act.prefs
         for (n in 1..len) {
             val idx = n - 1 + lead
             val col = idx % 7
             val row = idx / 7
-            val x = col * cw
-            val y = headH + row * ch
+            val x = sw / 2 + col * cw
+            val y = headH + sw / 2 + row * ch
             val ep = LocalDate.of(year, month, n).toEpochDay()
             val label = n.toString()
             if (ep == today) {
