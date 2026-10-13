@@ -36,9 +36,10 @@ class WeekGrid(
 ) : View(ctx) {
     /** Height of one hour. onMeasure sets it so each two-hour cell is square. */
     private var hourH = ctx.ppf(11f)
-    private val gutter = ctx.ppf(12f)
+    /** The hour label column: 26 px, as on the Palm. */
+    private val gutter = ctx.ppf(26f)
     /** Space above the first and below the last hour line, so the labels centered on them show. */
-    private val y0 = ctx.ppf(4f)
+    private val y0 = ctx.ppf(3f)
     /** The hours shown: the day start and end times from Preferences. */
     private val h0 = act.prefs.dayStart
     private val h1 = maxOf(act.prefs.dayEnd, h0 + 1)
@@ -50,7 +51,7 @@ class WeekGrid(
     }
     private val fill = Paint().apply { color = Palm.GRAY }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; textSize = ctx.ppf(7f); typeface = Typeface.DEFAULT_BOLD
+        color = Palm.INK; textSize = ctx.ppf(8f); textAlign = Paint.Align.RIGHT
     }
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Palm.INK; style = Paint.Style.STROKE; strokeWidth = ctx.ppf(1f)
@@ -106,8 +107,7 @@ class WeekGrid(
             if (h % 2 != 0) continue
             val y = yOf(h * 60)
             if (h != h0 && h != h1) c.drawLine(gutter, y, width.toFloat(), y, dotted)
-            val lbl = if (Fmt.h24) "${h % 24}" else (if (h % 12 == 0) "12" else "${h % 12}")
-            c.drawText(lbl, context.ppf(1f), y - (text.ascent() + text.descent()) / 2, text)
+            c.drawText(Fmt.timeShort(h * 60), gutter - context.ppf(2f), y - (text.ascent() + text.descent()) / 2, text)
         }
         // Solid vertical lines; the last one sits inside the right edge.
         for (i in 0..7) {

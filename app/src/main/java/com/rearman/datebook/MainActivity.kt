@@ -658,7 +658,8 @@ open class MainActivity : Activity() {
         h.addView(arrow(false) { stepDate(1) })
 
         val col = vbox()
-        val head = hbox().apply { setPadding(pp(12), 0, 0, pp(1)) }
+        // Starts after the 26 px hour label column of the grid.
+        val head = hbox().apply { setPadding(pp(26), 0, 0, 0) }
         for (i in 0..6) {
             val d = ws + i
             val untimed = dayOccs(d).count { it.event.untimed }
@@ -670,7 +671,7 @@ open class MainActivity : Activity() {
             val fg = if (d == today) Palm.paper else Palm.INK
             cell.addView(label(Fmt.dowLetter[i], bold = true, size = Palm.text - 1).apply { setTextColor(fg); gravity = Gravity.CENTER })
             cell.addView(label(Fmt.ld(d).dayOfMonth.toString(), bold = true).apply { setTextColor(fg); gravity = Gravity.CENTER })
-            cell.addView(label("◆".repeat(minOf(untimed, 3)), size = 6f).apply { setTextColor(fg); gravity = Gravity.CENTER })
+            cell.addView(label("◆".repeat(minOf(untimed, 3)), size = 4f).apply { setTextColor(fg); gravity = Gravity.CENTER })
             head.addView(cell, LP(0, WRAP, 1f))
         }
         col.addView(head, lp(MATCH))
