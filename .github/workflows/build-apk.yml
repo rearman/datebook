@@ -31,8 +31,11 @@ jobs:
       - name: Build APK
         run: gradle assembleDebug --stacktrace
 
+      - name: Rename APK
+        run: mv app/build/outputs/apk/debug/app-debug.apk datebook.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: datebook.apk
           archive: false

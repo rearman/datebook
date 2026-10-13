@@ -14,7 +14,7 @@ The repository has no Gradle wrapper. CI (`.github/workflows/build-apk.yml`) use
 gradle assembleDebug --stacktrace
 ```
 
-Output: `app/build/outputs/apk/debug/app-debug.apk`. CI runs on each push to `main` or `master`, and on manual dispatch. CI uploads the APK unzipped (`upload-artifact` with `archive: false`), so the artifact is `app-debug.apk`. That mode accepts only one file, so keep the path exact.
+Output: `app/build/outputs/apk/debug/app-debug.apk`. CI runs on each push to `main` or `master`, and on manual dispatch. CI uploads the APK unzipped (`upload-artifact` with `archive: false`), so the artifact is the file itself. A workflow step first renames it to `datebook.apk`, which is the artifact name. That mode accepts only one file, so keep the path exact.
 
 The repository has no tests and no lint configuration.
 

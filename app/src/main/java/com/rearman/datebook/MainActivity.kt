@@ -381,6 +381,10 @@ open class MainActivity : Activity() {
             setOnClickListener { endEdit(); onClick() }
         }
 
+    /** Width of a time column: the widest time at the current font, plus [pad], and never below [min]. */
+    private fun timeColW(pad: Int, min: Int): Int =
+        maxOf(min, label("", bold = true).paint.measureText("00:00").toInt() + pad + dp(2))
+
     private fun viewIcons(cmds: LinearLayout) {
         for (k in 0..3) {
             cmds.addView(ViewIcon(this, k, mode == k) {
@@ -452,6 +456,7 @@ open class MainActivity : Activity() {
 
         val (laneOf, nLanes) = lanes(timed)
         val barW = if (prefs.timeBars) dp(6) + nLanes * dp(5) else 0
+        val timeW = timeColW(dp(8), dp(50))
 
         val col = vbox()
         var focusView: EditText? = null
@@ -474,7 +479,8 @@ open class MainActivity : Activity() {
                 setPadding(dp(2), dp(9), dp(6), dp(9))
                 setTextColor(if (e == null) Palm.GRAY else Palm.INK)
                 setOnClickListener { endEdit(); timeTapped(row) }
-            }, LP(dp(50), WRAP))
+                maxLines = 1
+            }, LP(timeW, WRAP))
 
             if (e != null && isMasked(e)) {
                 r.addView(label("").apply {
@@ -696,14 +702,15 @@ open class MainActivity : Activity() {
         if (occs.isEmpty()) col.addView(label("No appointments", size = Palm.textSp - 1).apply {
             setTextColor(Palm.GRAY); setPadding(0, dp(6), 0, dp(6))
         })
+        val timeW = timeColW(dp(8), dp(48))
         for (o in occs) {
             val r = hbox(Gravity.TOP).apply {
                 setPadding(0, dp(5), 0, dp(5))
                 setOnClickListener { if (isMasked(o.event)) revealAsk(o.event) else goDay(day, o) }
             }
             r.addView(label(if (o.event.untimed) "•" else Fmt.timeShort(o.event.start), bold = true).apply {
-                gravity = Gravity.END; setPadding(0, 0, dp(8), 0)
-            }, LP(dp(48), WRAP))
+                gravity = Gravity.END; setPadding(0, 0, dp(8), 0); maxLines = 1
+            }, LP(timeW, WRAP))
             if (isMasked(o.event)) r.addView(label("").apply { background = box(Palm.LIGHT, Palm.LIGHT, 0f, 2f) },
                 LP(0, dp(18), 1f))
             else r.addView(label(o.event.title.ifBlank { "(no description)" }), LP(0, WRAP, 1f))
