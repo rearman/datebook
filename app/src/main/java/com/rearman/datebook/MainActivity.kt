@@ -444,6 +444,8 @@ open class MainActivity : Activity() {
         val (laneOf, nLanes) = lanes(timed)
         val barW = if (prefs.timeBars) dp(6) + nLanes * dp(5) else 0
         val timeW = timeColW(dp(8), dp(50))
+        // Rows have 2 dp above the text and 1 dp below. Time bar ticks meet the time text at its center.
+        val mid = dp(2) + label("", bold = true).lineHeight / 2
 
         val col = vbox()
         var focusView: EditText? = null
@@ -455,7 +457,7 @@ open class MainActivity : Activity() {
             val r = hbox(Gravity.TOP)
             if (barW > 0) {
                 r.addView(TimeBar(this, if (row.untimed) emptyList() else timed, laneOf, row.min, rowEnd,
-                    free, nextFree),
+                    free, nextFree, mid),
                     LP(barW, MATCH))
             }
             val occ = row.occ
@@ -466,29 +468,31 @@ open class MainActivity : Activity() {
             }
             r.addView(label(timeText, bold = true).apply {
                 gravity = Gravity.END
-                setPadding(dp(2), dp(9), dp(6), dp(9))
+                setPadding(dp(2), dp(2), dp(6), dp(1))
                 setTextColor(if (e == null) Palm.GRAY else Palm.INK)
                 setOnClickListener { endEdit(); timeTapped(row) }
                 maxLines = 1
             }, LP(timeW, WRAP))
 
+            // The description and its icons, with a dotted underline from the time to the right edge.
+            val slot = hbox(Gravity.TOP)
             if (e != null && isMasked(e)) {
-                r.addView(label("").apply {
+                slot.addView(label("").apply {
                     background = box(Palm.LIGHT, Palm.LIGHT, 0f, 2f)
                     setOnClickListener { revealAsk(e) }
-                }, LP(0, dp(22), 1f).apply { topMargin = dp(8); marginEnd = dp(8) })
+                }, LP(0, dp(18), 1f).apply { topMargin = dp(2); marginEnd = dp(8) })
             } else {
-                val ed = rowEdit(e?.title ?: "")
+                val ed = rowEdit(e?.title ?: "").apply { setPadding(dp(2), dp(2), dp(4), dp(1)) }
                 val key = if (e != null) "e${e.id}" else "s${row.min}"
                 ed.tag = key
                 ed.setOnFocusChangeListener { _, has ->
                     if (has) { selected = row.occ; focusKey = key; lastEdit = ed }
                     else commitDayRow(row, ed.text.toString())
                 }
-                r.addView(ed, LP(0, WRAP, 1f))
+                slot.addView(ed, LP(0, WRAP, 1f))
                 if (key == focusKey) focusView = ed
                 if (e != null && occ != null) {
-                    val icons = hbox().apply { setPadding(0, dp(9), dp(4), 0) }
+                    val icons = hbox().apply { setPadding(0, dp(2), dp(4), 0) }
                     if (e.note.isNotEmpty()) icons.addView(IconView(this, IconView.NOTE).apply {
                         setOnClickListener { endEdit(); openNote(occ) }
                     }, lp().apply { marginStart = dp(3) })
@@ -498,11 +502,14 @@ open class MainActivity : Activity() {
                     if (e.repeats) icons.addView(IconView(this, IconView.REPEAT).apply {
                         setOnClickListener { endEdit(); editEvent(occ) }
                     }, lp().apply { marginStart = dp(3) })
-                    r.addView(icons)
+                    slot.addView(icons)
                 }
             }
+            r.addView(vbox().apply {
+                addView(slot, lp(MATCH))
+                addView(DottedLine(this@MainActivity, Palm.GRAY), LP(MATCH, dp(1)))
+            }, LP(0, WRAP, 1f))
             col.addView(r, lp(MATCH))
-            col.addView(DottedLine(this), LP(MATCH, dp(1)))
         }
         val sv = ScrollView(this).apply { addView(col); isFillViewport = true }
         content.addView(sv)
@@ -1064,18 +1071,19 @@ open class MainActivity : Activity() {
 }
 
 /** The thin dotted line under each Day view and To Do line. */
-class DottedLine(ctx: Context) : View(ctx) {
+class DottedLine(ctx: Context, color: Int = Palm.LIGHT) : View(ctx) {
     private val p = Paint().apply {
-        color = Palm.LIGHT; strokeWidth = ctx.dp(1f).toFloat()
+        this.color = color; strokeWidth = ctx.dp(1f).toFloat()
         pathEffect = android.graphics.DashPathEffect(floatArrayOf(ctx.dp(2).toFloat(), ctx.dp(2).toFloat()), 0f)
     }
     override fun onDraw(c: Canvas) { c.drawLine(0f, height / 2f, width.toFloat(), height / 2f, p) }
 }
 
 /**
- * Day view time bars: one lane per overlapping event, with ticks at start and end.
+ * Day view time bars: one lane per overlapping event. At the start and end, the bar
+ * turns right at [mid] (the center of the time text) and runs to the time column.
  * When an empty line starts at an event's end ([nextFree] in the row above, [free] in
- * that line), the bar runs down to the empty line's time and puts its end tick there.
+ * that line), the bar runs down to the empty line's time and turns there.
  */
 @SuppressLint("ViewConstructor")
 class TimeBar(
@@ -1085,32 +1093,33 @@ class TimeBar(
     private val rs: Int,
     private val re: Int,
     private val free: Boolean,
-    private val nextFree: Boolean
+    private val nextFree: Boolean,
+    private val mid: Int
 ) : View(ctx) {
     private val p = Paint().apply { color = Palm.INK; strokeWidth = ctx.dp(1.6f).toFloat() }
 
     override fun onDraw(c: Canvas) {
         val lw = context.dp(5).toFloat()
         val x0 = context.dp(4).toFloat()
-        val tick = context.dp(3).toFloat()
+        val xe = width.toFloat()
+        val y = mid.toFloat()
         for (o in timed) {
             val e = o.event
             val end = maxOf(e.end, e.start + 1)
             val x = x0 + (laneOf[o] ?: 0) * lw
             if (free && end == rs && e.start < rs) {
-                val y = context.dp(10).toFloat()
                 c.drawLine(x, 0f, x, y, p)
-                c.drawLine(x, y, x + tick, y, p)
+                c.drawLine(x, y, xe, y, p)
                 continue
             }
             if (!(e.start < re && end > rs)) continue
             val startsHere = e.start >= rs && e.start < re
             val endsHere = end > rs && (end < re || (end == re && !nextFree))
-            val top = if (startsHere) context.dp(10).toFloat() else 0f
-            val bot = if (endsHere) height - context.dp(10).toFloat() else height.toFloat()
+            val top = if (startsHere) y else 0f
+            val bot = if (endsHere) height - context.dp(2).toFloat() else height.toFloat()
             c.drawLine(x, top, x, maxOf(top, bot), p)
-            if (startsHere) c.drawLine(x, top, x + tick, top, p)
-            if (endsHere) c.drawLine(x, maxOf(top, bot), x + tick, maxOf(top, bot), p)
+            if (startsHere) c.drawLine(x, top, xe, top, p)
+            if (endsHere) c.drawLine(x, maxOf(top, bot), xe, maxOf(top, bot), p)
         }
     }
 }
