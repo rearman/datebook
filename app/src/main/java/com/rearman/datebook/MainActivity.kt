@@ -851,18 +851,27 @@ open class MainActivity : Activity() {
         }
     }
 
-    /** Category column, as set in Show options. One line, cut with "..." when long. */
-    private fun todoCategoryLabel(t: Todo): TextView =
-        label(store.categoryName(t.category), size = Palm.text - 1).apply {
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            maxWidth = pp(38)
-            setPadding(pp(2), 0, pp(3), 0)
-            setOnClickListener { tv ->
-                endEdit()
-                pickCategory(tv, t.category, includeAll = false) { id -> t.category = id; saveTodo(t) }
-            }
+    /**
+     * Category column, as set in Show options. As on the Palm, the column fits "Vehicl" and
+     * "Movi": longer names are cut to the whole characters that fit, with no ellipsis.
+     */
+    private fun todoCategoryLabel(t: Todo): TextView = label("").apply {
+        val textW = maxOf(paint.measureText("Vehicl"), paint.measureText("Movi"))
+        val name = store.categoryName(t.category)
+        var n = name.length
+        while (n > 0 && paint.measureText(name, 0, n) > textW) n--
+        text = name.substring(0, n)
+        gravity = Gravity.START
+        maxLines = 1
+        setPadding(pp(2), 0, pp(3), 0)
+        val w = textW.toInt() + 1 + pp(2) + pp(3)
+        minWidth = w
+        maxWidth = w
+        setOnClickListener { tv ->
+            endEdit()
+            pickCategory(tv, t.category, includeAll = false) { id -> t.category = id; saveTodo(t) }
         }
+    }
 
     private fun todoPriorityLabel(t: Todo): TextView =
         label("${t.priority}", bold = true).apply {
