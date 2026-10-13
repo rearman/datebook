@@ -33,10 +33,13 @@ import android.widget.ScrollView
 import android.widget.TextView
 import java.time.LocalDate
 
-class MainActivity : Activity() {
+/** The Date Book app. [TodoActivity] is the To Do List app; both use the same records. */
+open class MainActivity : Activity() {
     companion object {
         const val EXTRA_DAY = "day"
         const val EXTRA_EVENT = "event"
+        const val EXTRA_SELECT = "select"
+        const val EXTRA_TODO = "todo"
         private const val REQ_EXPORT = 11
         private const val REQ_IMPORT = 12
         const val DAY = 0
@@ -50,6 +53,8 @@ class MainActivity : Activity() {
     lateinit var prefs: Prefs
     var day: Long = LocalDate.now().toEpochDay()
     private var mode = DAY
+    /** True in the To Do List app. */
+    protected open val isTodoApp = false
     /** Private records the user chose to see while records are masked ("e12", "t5"). */
     val revealed = mutableSetOf<String>()
 
@@ -70,7 +75,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         store = Store.get(this)
         prefs = Prefs(this)
-        mode = prefs.lastView
+        mode = if (isTodoApp) TODO else prefs.lastView
         root = vbox().apply { isFocusableInTouchMode = true }
         setContentView(root)
         handleIntent(intent)
@@ -95,9 +100,19 @@ class MainActivity : Activity() {
     }
 
     private fun handleIntent(i: Intent?) {
-        if (i == null || !i.hasExtra(EXTRA_DAY)) return
+        if (i == null) return
+        if (i.hasExtra(EXTRA_TODO)) {
+            val tid = i.getLongExtra(EXTRA_TODO, 0)
+            selectedTodo = store.todos.firstOrNull { it.id == tid }
+            if (selectedTodo != null) prefs.todoCategory = -1
+            i.removeExtra(EXTRA_TODO)
+        }
+        if (!i.hasExtra(EXTRA_DAY)) return
         day = i.getLongExtra(EXTRA_DAY, today)
         mode = DAY
+        val sel = i.getLongExtra(EXTRA_SELECT, 0)
+        if (sel != 0L) store.event(sel)?.let { selected = Occ(it, day) }
+        i.removeExtra(EXTRA_SELECT)
         val id = i.getLongExtra(EXTRA_EVENT, 0)
         if (id != 0L) {
             Alarms.cancelRemind(this, id, day)
@@ -112,8 +127,7 @@ class MainActivity : Activity() {
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         when (mode) {
-            TODO -> { mode = DAY; render() }
-            DAY -> super.onBackPressed()
+            TODO, DAY -> super.onBackPressed()
             else -> { mode = DAY; render() }
         }
     }
@@ -213,6 +227,21 @@ class MainActivity : Activity() {
             { s -> t.note = s; store.save(t); render() },
             if (t.note.isNotEmpty()) ({ t.note = ""; store.save(t); render() }) else null
         ).show()
+    }
+
+    /** Switches to the To Do List app, as the Palm To Do button does. */
+    fun openTodoApp(todoId: Long?) {
+        val i = Intent(this, TodoActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (todoId != null) i.putExtra(EXTRA_TODO, todoId)
+        startActivity(i)
+    }
+
+    /** Switches to the Date Book app. */
+    fun openDateBook(d: Long?, eventId: Long?) {
+        val i = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (d != null) i.putExtra(EXTRA_DAY, d)
+        if (eventId != null) i.putExtra(EXTRA_SELECT, eventId)
+        startActivity(i)
     }
 
     fun changed() {
@@ -337,14 +366,6 @@ class MainActivity : Activity() {
                 setOnClickListener { onClick() }
             }, LP(0, MATCH, 1f).apply { marginStart = dp(3); marginEnd = dp(3) })
         }
-        key("Date Book") {
-            endEdit()
-            mode = if (mode in DAY..AGENDA) (mode + 1) % 4 else prefs.lastView
-            if (mode == DAY) day = today
-            prefs.lastView = mode
-            render()
-        }
-        key("To Do") { endEdit(); mode = TODO; render() }
         key("Menu") { showMenu() }
         key("Find") { endEdit(); showFind() }
         return bar
@@ -661,7 +682,7 @@ class MainActivity : Activity() {
                 background = box(Palm.LIGHT, Palm.LIGHT, 0f, 2f); setOnClickListener { revealAsk(t) }
             }, LP(0, dp(18), 1f))
             else r.addView(label(t.title.ifBlank { "(no description)" }).apply {
-                setOnClickListener { mode = TODO; selectedTodo = t; render() }
+                setOnClickListener { openTodoApp(t.id) }
             }, LP(0, WRAP, 1f))
             if (t.due in 0 until day) r.addView(label("!", bold = true).apply { setPadding(dp(6), 0, 0, 0) })
             col.addView(r, lp(MATCH))
@@ -902,13 +923,15 @@ class MainActivity : Activity() {
         if (evs.isEmpty()) d.add(label("  No matches"), 0)
         for (e in evs) {
             val shown = nextOccurrence(e)
-            result("${Fmt.shortDate(shown)}  ${e.title.ifBlank { "(no description)" }}") { goDay(shown, Occ(e, shown)) }
+            result("${Fmt.shortDate(shown)}  ${e.title.ifBlank { "(no description)" }}") {
+                if (isTodoApp) openDateBook(shown, e.id) else goDay(shown, Occ(e, shown))
+            }
         }
         d.add(label("To Do List", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
         if (tds.isEmpty()) d.add(label("  No matches"), 0)
         for (t in tds) {
             result(t.title.ifBlank { "(no description)" }) {
-                mode = TODO; prefs.todoCategory = -1; selectedTodo = t; render()
+                if (isTodoApp) { prefs.todoCategory = -1; selectedTodo = t; render() } else openTodoApp(t.id)
             }
         }
         d.button("Done") { d.dismiss() }

@@ -1,6 +1,6 @@
-# Date Book
+# Date Book and To Do List
 
-An Android calendar and to-do list after the Palm OS 3.5 Date Book and To Do List.
+Two Android apps after the Palm OS 3.5 Date Book and To Do List. One APK installs both apps. Each app has its own icon. The two apps use the same records, so the Date Book Agenda view shows your To Do items.
 
 ## Build the APK with GitHub
 
@@ -32,7 +32,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 
 ### Both
 
-- The **Date Book** key cycles Day, Week, Month and Agenda, as on the Palm.
+- The view icons at the bottom of Date Book select Day, Week, Month or Agenda.
 - **Menu** (or a tap on the title tab) opens the Record, Edit and Options menus.
 - **Find** searches the descriptions and notes of all records.
 - Font, Security (show, mask or hide private records), Purge, and a Green LCD screen option.

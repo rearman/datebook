@@ -19,7 +19,26 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:label="@string/app_name"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher"
             android:launchMode="singleTask"
+            android:taskAffinity="com.rearman.datebook.datebook"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".TodoActivity"
+            android:exported="true"
+            android:label="@string/todo_name"
+            android:icon="@mipmap/ic_todo"
+            android:roundIcon="@mipmap/ic_todo"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.rearman.datebook.todo"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
