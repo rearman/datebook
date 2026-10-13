@@ -15,7 +15,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 
 ### Date Book
 
-- Day view: time lines from the start time to the end time, time bars for overlapping events, untimed events at the top, and note, alarm and repeat icons. Tap a line and type to make an event.
+- Day view: time lines from the start time to the end time, time bars for overlapping events, untimed events at the top, and note, alarm and repeat icons. Tap a line and type to make an event. With Show Time Bars, an event that ends between hours gets an empty line at its end time.
 - Week view: a seven-day time grid. Tap an event to see its description. Tap it again to open its day. Touch and hold an event to edit it.
 - Month view: marks for timed events, untimed events (+) and daily repeating events (dashed line).
 - Agenda view: the events for one day, plus the To Do items that are due.

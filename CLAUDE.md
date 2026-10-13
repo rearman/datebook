@@ -16,7 +16,14 @@ gradle assembleDebug --stacktrace
 
 Output: `app/build/outputs/apk/debug/app-debug.apk`. CI runs on each push to `main` or `master`, and on manual dispatch. CI uploads the APK unzipped (`upload-artifact` with `archive: false`), so the artifact is the file itself. A workflow step first renames it to `datebook.apk`, which is the artifact name. That mode accepts only one file, so keep the path exact.
 
-The repository has no tests and no lint configuration.
+JVM unit tests (JUnit 4) are in `app/src/test/`. CI runs them after the build:
+
+```sh
+gradle testDebugUnitTest
+gradle testDebugUnitTest --tests com.rearman.datebook.FreeTimesTest
+```
+
+The repository has no lint configuration.
 
 `app/debug.keystore` is committed on purpose. Both build types sign with it, so a new build installs over the old one and keeps the user's data. Do not remove it or change the signing config.
 

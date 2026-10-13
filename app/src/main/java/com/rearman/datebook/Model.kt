@@ -61,6 +61,25 @@ data class Category(val id: Int, var name: String)
 /** An event as it appears on one particular day. */
 data class Occ(val event: Event, val day: Long)
 
+/**
+ * Start times of the empty Day view lines, one for each hour from [dayStart] to [dayEnd]
+ * that no event overlaps. With [ends] (Show Time Bars), an hour line shows when no event
+ * covers the hour mark itself, and a line also shows at each event end between hours.
+ */
+fun freeTimes(timed: List<Occ>, dayStart: Int, dayEnd: Int, ends: Boolean): List<Int> {
+    fun busy(a: Int, b: Int) = timed.any { it.event.start < b && maxOf(it.event.end, it.event.start + 1) > a }
+    val out = mutableListOf<Int>()
+    for (hr in dayStart until dayEnd) {
+        val a = hr * 60
+        if (!busy(a, if (ends) a + 1 else a + 60)) out.add(a)
+    }
+    if (ends) for (o in timed) {
+        val t = o.event.end
+        if (t % 60 != 0 && t < 24 * 60 && !busy(t, t + 1) && t !in out) out.add(t)
+    }
+    return out.sorted()
+}
+
 object Recur {
     /** Day of week with Sunday = 0. */
     fun dow(d: LocalDate): Int = d.dayOfWeek.value % 7

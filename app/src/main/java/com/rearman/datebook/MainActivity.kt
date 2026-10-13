@@ -446,10 +446,7 @@ open class MainActivity : Activity() {
         val list = mutableListOf<Row>()
         timed.forEach { list.add(Row(it, it.event.start, false)) }
         if (!prefs.compress) {
-            for (hr in prefs.dayStart until prefs.dayEnd) {
-                val a = hr * 60; val b = a + 60
-                if (timed.none { it.event.start < b && maxOf(it.event.end, it.event.start + 1) > a }) list.add(Row(null, a, false))
-            }
+            freeTimes(timed, prefs.dayStart, prefs.dayEnd, prefs.timeBars).forEach { list.add(Row(null, it, false)) }
         }
         rows.addAll(list.sortedWith(compareBy<Row>({ it.min }, { if (it.occ == null) 1 else 0 })))
         if (rows.isEmpty()) rows.add(Row(null, prefs.dayStart * 60, false))
