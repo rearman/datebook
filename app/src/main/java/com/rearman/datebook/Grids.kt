@@ -6,7 +6,6 @@ import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.RectF
-import android.graphics.Typeface
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
@@ -49,7 +48,7 @@ class WeekGrid(
     }
     private val fill = Paint().apply { color = Palm.GRAY }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; textSize = ctx.ppf(Palm.text); typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.RIGHT
+        color = Palm.INK; textSize = ctx.ppf(Palm.text); typeface = Palm.typeface(ctx, true); textAlign = Paint.Align.RIGHT
     }
     /** The hour label column: the widest time in the label font, 1 Palm px on the left and 2 on the right. */
     val gutter = text.measureText("00:00") + ctx.ppf(3f)
@@ -165,17 +164,17 @@ class MonthGrid(
     }
     private val fill = Paint().apply { color = Palm.INK }
     private val num = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; textSize = ctx.ppf(Palm.text - 1); typeface = Typeface.DEFAULT_BOLD
+        color = Palm.INK; textSize = ctx.ppf(Palm.text); typeface = Palm.typeface(ctx, true)
     }
     private val head = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; textSize = ctx.ppf(Palm.text - 1); typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.CENTER
+        color = Palm.INK; textSize = ctx.ppf(Palm.text); typeface = Palm.typeface(ctx, true); textAlign = Paint.Align.CENTER
     }
     private val dash = Paint().apply {
         color = Palm.INK; strokeWidth = ctx.ppf(1f); style = Paint.Style.STROKE
         pathEffect = DashPathEffect(floatArrayOf(ctx.ppf(1.5f), ctx.ppf(1.5f)), 0f)
     }
     private val small = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; textSize = ctx.ppf(6f)
+        color = Palm.INK; textSize = ctx.ppf(6f); typeface = Palm.typeface(ctx, false)
     }
 
     private val gd = GestureDetector(ctx, object : GestureDetector.SimpleOnGestureListener() {

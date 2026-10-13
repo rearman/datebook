@@ -16,7 +16,7 @@ class DateDialog(
     private var year: Int
     private var month: Int
     private val selected: Long = initial
-    private val yearLabel = ctx.label("", bold = true, size = Palm.text + 2)
+    private val yearLabel = ctx.label("", bold = true, size = Palm.text)
     private val months: PushGroup
     private val grid = ctx.vbox()
 
@@ -106,7 +106,7 @@ class TimeDialog(
         val boxes = ctx.hbox()
         for ((i, b) in listOf(startBox, endBox).withIndex()) {
             val col = ctx.vbox()
-            col.addView(ctx.label(if (i == 0) "Start Time" else "End Time", size = Palm.text - 1))
+            col.addView(ctx.label(if (i == 0) "Start Time" else "End Time", size = Palm.text))
             b.setPadding(ctx.pp(3), ctx.pp(2.5f), ctx.pp(3), ctx.pp(2.5f))
             b.gravity = Gravity.CENTER
             b.setOnClickListener { editingEnd = i == 1; draw() }
@@ -115,7 +115,7 @@ class TimeDialog(
         }
         add(boxes)
 
-        add(ctx.label("Hour", bold = true, size = Palm.text - 1), 4)
+        add(ctx.label("Hour", bold = true, size = Palm.text), 4)
         val hours = if (Fmt.h24) (0..23).toList() else (1..12).toList()
         val perRow = 6
         hours.chunked(perRow).forEach { chunk ->
@@ -133,7 +133,7 @@ class TimeDialog(
             ampm = g
             add(g.view, 2)
         }
-        add(ctx.label("Minute", bold = true, size = Palm.text - 1), 4)
+        add(ctx.label("Minute", bold = true, size = Palm.text), 4)
         (0 until 12).chunked(6).forEach { chunk ->
             val row = ctx.hbox()
             chunk.forEach { k ->

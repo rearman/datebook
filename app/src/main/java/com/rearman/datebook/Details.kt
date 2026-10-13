@@ -184,7 +184,7 @@ fun MainActivity.showSecurity() {
     d.add(label("Current Privacy:", bold = true))
     val g = PushGroup(this, listOf("Show", "Mask", "Hide"), prefs.security)
     d.add(g.view)
-    d.add(label("Mask: private records show as a gray bar. Tap one to see it.\nHide: private records do not show.", size = Palm.text - 1), 4)
+    d.add(label("Mask: private records show as a gray bar. Tap one to see it.\nHide: private records do not show.", size = Palm.text), 4)
     d.button("OK") { prefs.security = g.selected; revealed.clear(); d.dismiss(); render() }
     d.button("Cancel") { d.dismiss() }
     d.show()
@@ -234,7 +234,7 @@ fun MainActivity.showEditCategories() {
         if (store.categories.isEmpty()) list.addView(label("No categories"))
     }
     fill()
-    d.add(label("Tap a category to rename or delete it.", size = Palm.text - 1))
+    d.add(label("Tap a category to rename or delete it.", size = Palm.text))
     d.add(list)
     d.button("OK") { d.dismiss(); render() }
     d.button("New") {

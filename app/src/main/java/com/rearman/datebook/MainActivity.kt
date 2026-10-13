@@ -12,7 +12,6 @@ import android.graphics.Color
 import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -398,7 +397,7 @@ open class MainActivity : Activity() {
     private fun tab(h: LinearLayout, title: String, clock: Boolean = false) {
         val v = if (clock) TextClock(this).apply {
             format12Hour = "h:mm a"; format24Hour = "H:mm"
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text)); includeFontPadding = false; typeface = Typeface.DEFAULT_BOLD
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text)); includeFontPadding = false; typeface = Palm.typeface(this@MainActivity, true)
         } else label(title, bold = true)
         val t = v.apply {
             setTextColor(Palm.paper)
@@ -571,6 +570,7 @@ open class MainActivity : Activity() {
         setTextColor(Palm.INK)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text))
         includeFontPadding = false
+        typeface = Palm.typeface(context, false)
         minHeight = 0
         minimumHeight = 0
         setPadding(pp(1), 0, pp(1), 0)
@@ -678,7 +678,7 @@ open class MainActivity : Activity() {
                 if (d == today) background = box(Palm.INK, Palm.INK, 0f, 1f)
             }
             val fg = if (d == today) Palm.paper else Palm.INK
-            cell.addView(label(Fmt.dowLetter[i], bold = true, size = Palm.text - 1).apply { setTextColor(fg); gravity = Gravity.CENTER })
+            cell.addView(label(Fmt.dowLetter[i], bold = true, size = Palm.text).apply { setTextColor(fg); gravity = Gravity.CENTER })
             cell.addView(label(Fmt.ld(d).dayOfMonth.toString(), bold = true).apply { setTextColor(fg); gravity = Gravity.CENTER })
             cell.addView(label("◆".repeat(minOf(untimed, 3)), size = 4f).apply { setTextColor(fg); gravity = Gravity.CENTER })
             head.addView(cell, LP(0, WRAP, 1f))
@@ -753,7 +753,7 @@ open class MainActivity : Activity() {
         val col = vbox().apply { setPadding(pp(4), pp(2.5f), pp(4), pp(4)) }
 
         val occs = dayOccs(day)
-        if (occs.isEmpty()) col.addView(label("No Appointments Today", size = Palm.text - 1).apply {
+        if (occs.isEmpty()) col.addView(label("No Appointments Today", size = Palm.text).apply {
             setPadding(0, pp(2.5f), 0, pp(2.5f))
         })
         val timeW = timeColW(pp(3), pp(19))
@@ -782,7 +782,7 @@ open class MainActivity : Activity() {
         })
         col.addView(th, lp(MATCH))
         val tds = agendaTodos()
-        if (tds.isEmpty()) col.addView(label("No open items",size = Palm.text - 1).apply {
+        if (tds.isEmpty()) col.addView(label("No open items",size = Palm.text).apply {
             setPadding(0, pp(2.5f), 0, pp(2.5f))
         })
         for (t in tds) {

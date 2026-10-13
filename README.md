@@ -36,7 +36,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - **Menu** (the three-line icon at the bottom right, or a tap on the title tab) opens the Record, Edit and Options menus.
 - **Find** (the magnifier icon at the bottom right) searches the descriptions and notes of all records.
 - Font, Security (show, mask or hide private records), Purge, and a Green LCD screen option.
-- All screens use the proportions of the Palm IIIxe: the screen width is 160 Palm pixels, and the Font option selects the Palm small, standard or large font size.
+- All screens use the proportions of the Palm IIIxe: the screen width is 160 Palm pixels, and the Font option selects the Palm small, standard or large font size. All text uses the Palm OS font.
 - Export Backup and Import Backup save and load all records as a JSON file.
 
 ## Limits
@@ -44,3 +44,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - Graffiti and pen gestures are not included.
 - Beam and Phone Lookup are not included.
 - Android 8.0 or later is necessary.
+
+## Credits
+
+The Palm OS fonts (app/src/main/assets/fonts) are by Damien Guard, a recreation of the Palm OS system fonts: https://damieng.com/typography/palmos-font/. The license is Creative Commons Attribution-ShareAlike 3.0 (https://creativecommons.org/licenses/by-sa/3.0/). The font files are not changed.

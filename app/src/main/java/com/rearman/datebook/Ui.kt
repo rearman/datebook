@@ -14,6 +14,9 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import android.text.InputType
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.RelativeSizeSpan
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -36,13 +39,40 @@ object Palm {
     const val GRAY = 0xFF808080.toInt()
     const val LIGHT = 0xFFC4C4C4.toInt()
     var paper = Color.WHITE
-    /** Text size in Palm pixels. 9.4 gives the 11 px line of the Palm standard font. */
-    var text = 9.4f
+    /** Text size in Palm pixels. 16 draws the Palm OS font at one font pixel per Palm pixel, with an 11 px line. */
+    var text = 16f
+
+    private var regular: Typeface? = null
+    private var boldFace: Typeface? = null
+
+    /** The Palm OS font (Damien Guard's recreation, assets/fonts), loaded one time. */
+    fun typeface(ctx: Context, bold: Boolean): Typeface {
+        if (regular == null) {
+            val a = ctx.applicationContext.assets
+            regular = Typeface.createFromAsset(a, "fonts/palm-os.ttf")
+            boldFace = Typeface.createFromAsset(a, "fonts/palm-os-bold.ttf")
+        }
+        return (if (bold) boldFace else regular)!!
+    }
 
     fun apply(p: Prefs) {
         paper = if (p.greenScreen) 0xFFC9D3A8.toInt() else Color.WHITE
-        text = when (p.font) { 0 -> 8f; 2 -> 12f; else -> 9.4f }
+        text = when (p.font) { 0 -> 13f; 2 -> 20f; else -> 16f }
     }
+}
+
+/**
+ * The Palm OS font has no arrow glyphs, so these come from the system font, which draws them
+ * larger. This shrinks each one to 0.6 of the text size.
+ */
+fun symbols(s: CharSequence): CharSequence {
+    if (s.none { it == '◀' || it == '▶' || it == '▼' }) return s
+    val sp = SpannableString(s)
+    s.forEachIndexed { i, ch ->
+        if (ch == '◀' || ch == '▶' || ch == '▼')
+            sp.setSpan(RelativeSizeSpan(0.6f), i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    }
+    return sp
 }
 
 typealias LP = LinearLayout.LayoutParams
@@ -65,13 +95,13 @@ fun Context.pp(v: Int): Int = pp(v.toFloat())
 
 fun lp(w: Int = WRAP, h: Int = WRAP, weight: Float = 0f) = LP(w, h, weight)
 
-fun Context.label(text: String, bold: Boolean = false, size: Float = Palm.text): TextView =
+fun Context.label(text: CharSequence, bold: Boolean = false, size: Float = Palm.text): TextView =
     TextView(this).apply {
-        this.text = text
+        this.text = symbols(text)
         setTextColor(Palm.INK)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(size))
         includeFontPadding = false
-        if (bold) typeface = Typeface.DEFAULT_BOLD
+        typeface = Palm.typeface(this@label, bold)
     }
 
 fun Context.hbox(gravity: Int = Gravity.CENTER_VERTICAL): LinearLayout =
@@ -88,7 +118,7 @@ fun Context.box(fill: Int, stroke: Int, strokePp: Float, radiusPp: Float, dashed
     }
 
 /** Rounded Palm command button. Inverts while pressed. */
-fun Context.palmButton(text: String, onClick: () -> Unit): TextView =
+fun Context.palmButton(text: CharSequence, onClick: () -> Unit): TextView =
     label(text, bold = true).apply {
         gravity = Gravity.CENTER
         val normal = box(Palm.paper, Palm.INK, 1f, 3.5f)
@@ -123,7 +153,7 @@ fun Context.popupTrigger(text: String, onClick: (TextView) -> Unit): TextView =
         setOnClickListener { onClick(this) }
     }
 
-fun TextView.setTrigger(text: String) { this.text = "▼ $text" }
+fun TextView.setTrigger(text: String) { this.text = symbols("▼ $text") }
 
 fun Context.checkBox(text: String, checked: Boolean, onChange: (Boolean) -> Unit = {}): CheckBox =
     CheckBox(this).apply {
@@ -132,6 +162,7 @@ fun Context.checkBox(text: String, checked: Boolean, onChange: (Boolean) -> Unit
         setTextColor(Palm.INK)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text))
         includeFontPadding = false
+        typeface = Palm.typeface(context, false)
         buttonDrawable = PalmCheckDrawable(this@checkBox, pp(9))
         minHeight = 0
         minimumHeight = 0
@@ -185,6 +216,7 @@ fun Context.field(text: String, hint: String = "", multiLine: Boolean = false): 
         setHintTextColor(Palm.GRAY)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text))
         includeFontPadding = false
+        typeface = Palm.typeface(context, false)
         minHeight = 0
         minimumHeight = 0
         setPadding(pp(1), pp(1), pp(1), pp(1))
