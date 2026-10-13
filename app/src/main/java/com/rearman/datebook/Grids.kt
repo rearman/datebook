@@ -35,13 +35,20 @@ class WeekGrid(
     private val onSelect: (Occ?) -> Unit
 ) : View(ctx) {
     /** Height of one hour. onMeasure sets it so each two-hour cell is square. */
-    var hourH = ctx.ppf(11f)
-        private set
+    private var hourH = ctx.ppf(11f)
     private val gutter = ctx.ppf(12f)
+    /** Space above the first and below the last hour line, so the labels centered on them show. */
+    private val y0 = ctx.ppf(4f)
+    /** The hours shown: the day start and end times from Preferences. */
+    private val h0 = act.prefs.dayStart
+    private val h1 = maxOf(act.prefs.dayEnd, h0 + 1)
     private val ink = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palm.INK; strokeWidth = ctx.ppf(1f) }
-    private val thin = Paint().apply { color = Palm.INK; strokeWidth = 1f }
+    /** Hour lines inside the box: black and dotted. */
+    private val dotted = Paint().apply {
+        color = Palm.INK; strokeWidth = ctx.ppf(1f)
+        pathEffect = DashPathEffect(floatArrayOf(ctx.ppf(1f), ctx.ppf(1f)), 0f)
+    }
     private val fill = Paint().apply { color = Palm.GRAY }
-    private val shade = Paint().apply { color = 0x14000000 }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Palm.INK; textSize = ctx.ppf(7f); typeface = Typeface.DEFAULT_BOLD
     }
@@ -80,28 +87,32 @@ class WeekGrid(
     override fun onMeasure(w: Int, h: Int) {
         val wPx = MeasureSpec.getSize(w)
         hourH = (wPx - gutter) / 7f / 2f
-        setMeasuredDimension(wPx, (hourH * 24).toInt() + 2)
+        setMeasuredDimension(wPx, ((h1 - h0) * hourH + 2 * y0).toInt() + 2)
     }
+
+    /** The y position of [min] minutes after midnight, held inside the box. */
+    private fun yOf(min: Int) = y0 + (min.coerceIn(h0 * 60, h1 * 60) - h0 * 60) / 60f * hourH
 
     override fun onDraw(c: Canvas) {
         c.drawColor(Palm.paper)
         val cw = colW()
-        val p = act.prefs
-        // Shade the hours outside the day's start and end times.
-        c.drawRect(gutter, 0f, width.toFloat(), p.dayStart * hourH, shade)
-        c.drawRect(gutter, p.dayEnd * hourH, width.toFloat(), 24 * hourH, shade)
-        // A line and a label at each even hour only.
-        for (h in 0..24 step 2) {
-            val y = h * hourH
-            c.drawLine(gutter, y, width.toFloat(), y, thin)
-            if (h < 24) {
-                val lbl = if (Fmt.h24) "$h" else (if (h % 12 == 0) "12" else "${h % 12}")
-                c.drawText(lbl, context.ppf(1f), y + text.textSize + 2, text)
-            }
+        val top = yOf(h0 * 60)
+        val bottom = yOf(h1 * 60)
+        // The box top and bottom are the start and end hours, solid. Even hours between them get
+        // a dotted line. Each even hour gets a label centered on its line.
+        c.drawLine(gutter, top, width.toFloat(), top, ink)
+        c.drawLine(gutter, bottom, width.toFloat(), bottom, ink)
+        for (h in h0..h1) {
+            if (h % 2 != 0) continue
+            val y = yOf(h * 60)
+            if (h != h0 && h != h1) c.drawLine(gutter, y, width.toFloat(), y, dotted)
+            val lbl = if (Fmt.h24) "${h % 24}" else (if (h % 12 == 0) "12" else "${h % 12}")
+            c.drawText(lbl, context.ppf(1f), y - (text.ascent() + text.descent()) / 2, text)
         }
+        // Solid vertical lines; the last one sits inside the right edge.
         for (i in 0..7) {
-            val x = gutter + i * cw
-            c.drawLine(x, 0f, x, height.toFloat(), if (i == 0) ink else thin)
+            val x = minOf(gutter + i * cw, width - ink.strokeWidth / 2)
+            c.drawLine(x, top, x, bottom, ink)
         }
         boxes.clear()
         for (i in 0..6) {
@@ -109,11 +120,12 @@ class WeekGrid(
             val lw = (cw - context.ppf(2f)) / nLanes
             for (o in timed[i]) {
                 val e = o.event
+                val end = maxOf(e.end, e.start + 15)
+                // Events outside the start and end hours do not show.
+                if (end <= h0 * 60 || e.start >= h1 * 60) continue
                 val lane = laneOf[o] ?: 0
                 val l = gutter + i * cw + context.ppf(1f) + lane * lw
-                val top = e.start / 60f * hourH
-                val bot = maxOf(e.end, e.start + 15) / 60f * hourH
-                val r = RectF(l, top + 1, l + lw - 1, bot - 1)
+                val r = RectF(l, yOf(e.start) + 1, l + lw - 1, yOf(end) - 1)
                 fill.color = when {
                     act.isMasked(e) -> Palm.LIGHT
                     o == selected -> Palm.INK

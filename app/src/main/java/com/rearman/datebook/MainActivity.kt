@@ -674,7 +674,6 @@ open class MainActivity : Activity() {
         val sv = ScrollView(this).apply { addView(grid) }
         col.addView(sv, LP(MATCH, 0, 1f))
         content.addView(col)
-        sv.post { sv.scrollTo(0, (prefs.dayStart * grid.hourH).toInt()) }
 
         viewIcons(cmds)
         cmd(cmds, "Go to") { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
