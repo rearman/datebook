@@ -658,8 +658,12 @@ open class MainActivity : Activity() {
         h.addView(arrow(false) { stepDate(1) })
 
         val col = vbox()
-        // Starts after the 26 px hour label column of the grid.
-        val head = hbox().apply { setPadding(pp(26), 0, 0, 0) }
+        val grid = WeekGrid(this, this, ws) { o ->
+            weekSel = o
+            if (o != null) showEventBox(o)
+        }
+        // Lines up with the grid: its hour label column on the left, its 3 px margin on the right.
+        val head = hbox().apply { setPadding(grid.gutter.toInt(), 0, pp(3), 0) }
         for (i in 0..6) {
             val d = ws + i
             val untimed = dayOccs(d).count { it.event.untimed }
@@ -675,10 +679,6 @@ open class MainActivity : Activity() {
             head.addView(cell, LP(0, WRAP, 1f))
         }
         col.addView(head, lp(MATCH))
-        val grid = WeekGrid(this, this, ws) { o ->
-            weekSel = o
-            if (o != null) showEventBox(o)
-        }
         val sv = ScrollView(this).apply { addView(grid) }
         col.addView(sv, LP(MATCH, 0, 1f))
         content.addView(col)

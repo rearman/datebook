@@ -36,8 +36,6 @@ class WeekGrid(
 ) : View(ctx) {
     /** Height of one hour. onMeasure sets it so each two-hour cell is square. */
     private var hourH = ctx.ppf(11f)
-    /** The hour label column: 26 px, as on the Palm. */
-    private val gutter = ctx.ppf(26f)
     /** Space above the first and below the last hour line, so the labels centered on them show. */
     private val y0 = ctx.ppf(3f)
     /** The hours shown: the day start and end times from Preferences. */
@@ -51,8 +49,12 @@ class WeekGrid(
     }
     private val fill = Paint().apply { color = Palm.GRAY }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; textSize = ctx.ppf(8f); textAlign = Paint.Align.RIGHT
+        color = Palm.INK; textSize = ctx.ppf(Palm.text); typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.RIGHT
     }
+    /** The hour label column: the widest time in the label font, 1 Palm px on the left and 2 on the right. */
+    val gutter = text.measureText("00:00") + ctx.ppf(3f)
+    /** Space to the right of the grid, as in the Month view. */
+    private val mr = ctx.ppf(3f)
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Palm.INK; style = Paint.Style.STROKE; strokeWidth = ctx.ppf(1f)
     }
@@ -82,12 +84,13 @@ class WeekGrid(
         }
     })
 
-    private fun colW() = (width - gutter) / 7f
-    private fun colAt(x: Float): Int = if (x < gutter) -1 else ((x - gutter) / colW()).toInt().coerceIn(0, 6)
+    private fun colW() = (width - gutter - mr) / 7f
+    private fun colAt(x: Float): Int =
+        if (x < gutter || x > width - mr) -1 else ((x - gutter) / colW()).toInt().coerceIn(0, 6)
 
     override fun onMeasure(w: Int, h: Int) {
         val wPx = MeasureSpec.getSize(w)
-        hourH = (wPx - gutter) / 7f / 2f
+        hourH = (wPx - gutter - mr) / 7f / 2f
         setMeasuredDimension(wPx, ((h1 - h0) * hourH + 2 * y0).toInt() + 2)
     }
 
@@ -101,17 +104,17 @@ class WeekGrid(
         val bottom = yOf(h1 * 60)
         // The box top and bottom are the start and end hours, solid. Even hours between them get
         // a dotted line. Each even hour gets a label centered on its line.
-        c.drawLine(gutter, top, width.toFloat(), top, ink)
-        c.drawLine(gutter, bottom, width.toFloat(), bottom, ink)
+        c.drawLine(gutter, top, width - mr, top, ink)
+        c.drawLine(gutter, bottom, width - mr, bottom, ink)
         for (h in h0..h1) {
             if (h % 2 != 0) continue
             val y = yOf(h * 60)
-            if (h != h0 && h != h1) c.drawLine(gutter, y, width.toFloat(), y, dotted)
+            if (h != h0 && h != h1) c.drawLine(gutter, y, width - mr, y, dotted)
             c.drawText(Fmt.timeShort(h * 60), gutter - context.ppf(2f), y - (text.ascent() + text.descent()) / 2, text)
         }
-        // Solid vertical lines; the last one sits inside the right edge.
+        // Solid vertical lines.
         for (i in 0..7) {
-            val x = minOf(gutter + i * cw, width - ink.strokeWidth / 2)
+            val x = gutter + i * cw
             c.drawLine(x, top, x, bottom, ink)
         }
         boxes.clear()
