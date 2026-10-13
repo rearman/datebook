@@ -33,7 +33,7 @@ class EventDetails(
         val units = listOf("Minutes", "Hours", "Days")
         alarmBox.addView(act.popupTrigger(units[work.alarmUnit]) { tv ->
             act.popupList(tv, units, work.alarmUnit) { i -> work.alarmUnit = i; tv.setTrigger(units[i]) }
-        }, lp().apply { marginStart = act.dp(4) })
+        }, lp().apply { marginStart = act.pp(1.5f) })
         alarmBox.visibility = if (work.alarm) View.VISIBLE else View.GONE
         row("Alarm:", chk, alarmBox)
 
@@ -68,7 +68,7 @@ class TodoDetails(private val act: MainActivity, private val t: Todo) : PalmDial
     init {
         val pri = PushGroup(act, listOf("1", "2", "3", "4", "5"), work.priority - 1) { g -> work.priority = g.selected + 1 }
         row("Priority:", pri.view)
-        (pri.view.layoutParams as? LinearLayout.LayoutParams)?.let { it.width = act.dp(200) }
+        (pri.view.layoutParams as? LinearLayout.LayoutParams)?.let { it.width = act.pp(80) }
 
         row("Category:", act.popupTrigger(act.store.categoryName(work.category)) { tv ->
             act.pickCategory(tv, work.category, includeAll = false) { id -> work.category = id; tv.setTrigger(act.store.categoryName(id)) }
@@ -151,12 +151,12 @@ fun MainActivity.showDisplayOptions() {
     val bars = checkBox("Show Time Bars", prefs.timeBars)
     val comp = checkBox("Compress Day View", prefs.compress)
     d.add(bars, 0); d.add(comp, 0)
-    d.add(label("Month View:", bold = true), 12)
+    d.add(label("Month View:", bold = true), 5)
     val timed = checkBox("Show Timed Items", prefs.monthTimed)
     val untimed = checkBox("Show Untimed Items", prefs.monthUntimed)
     val daily = checkBox("Show Daily Repeating Events", prefs.monthDaily)
     d.add(timed, 0); d.add(untimed, 0); d.add(daily, 0)
-    d.add(label("Screen:", bold = true), 12)
+    d.add(label("Screen:", bold = true), 5)
     val screen = PushGroup(this, listOf("White", "Green LCD"), if (prefs.greenScreen) 1 else 0)
     d.add(screen.view)
     d.button("OK") {
@@ -173,7 +173,7 @@ fun MainActivity.showFont() {
     val d = PalmDialog(this, "Select Font")
     val g = PushGroup(this, listOf("Small", "Normal", "Large"), prefs.font)
     d.add(g.view)
-    d.add(label("Sample: Lunch with Ann 12:00").apply { gravity = Gravity.CENTER }, 12)
+    d.add(label("Sample: Lunch with Ann 12:00").apply { gravity = Gravity.CENTER }, 5)
     d.button("OK") { prefs.font = g.selected; d.dismiss(); render() }
     d.button("Cancel") { d.dismiss() }
     d.show()
@@ -184,7 +184,7 @@ fun MainActivity.showSecurity() {
     d.add(label("Current Privacy:", bold = true))
     val g = PushGroup(this, listOf("Show", "Mask", "Hide"), prefs.security)
     d.add(g.view)
-    d.add(label("Mask: private records show as a gray bar. Tap one to see it.\nHide: private records do not show.", size = Palm.textSp - 2), 10)
+    d.add(label("Mask: private records show as a gray bar. Tap one to see it.\nHide: private records do not show.", size = Palm.text - 1), 4)
     d.button("OK") { prefs.security = g.selected; revealed.clear(); d.dismiss(); render() }
     d.button("Cancel") { d.dismiss() }
     d.show()
@@ -227,14 +227,14 @@ fun MainActivity.showEditCategories() {
         list.removeAllViews()
         for (cat in store.categories) {
             list.addView(label(cat.name).apply {
-                setPadding(dp(8), dp(8), dp(8), dp(8))
+                setPadding(pp(3), pp(3), pp(3), pp(3))
                 setOnClickListener { renameCategory(cat) { fill() } }
             }, lp(LinearLayout.LayoutParams.MATCH_PARENT))
         }
         if (store.categories.isEmpty()) list.addView(label("No categories"))
     }
     fill()
-    d.add(label("Tap a category to rename or delete it.", size = Palm.textSp - 2))
+    d.add(label("Tap a category to rename or delete it.", size = Palm.text - 1))
     d.add(list)
     d.button("OK") { d.dismiss(); render() }
     d.button("New") {

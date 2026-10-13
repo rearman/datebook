@@ -343,11 +343,11 @@ open class MainActivity : Activity() {
         lastEdit = null
 
         val header = hbox()
-        header.setPadding(0, dp(4), dp(4), 0)
+        header.setPadding(0, pp(1), pp(1), 0)
         val content = FrameLayout(this)
         // View icons and command buttons, left aligned. Menu and Find are added at the right below.
         val cmds = hbox()
-        val bottom = hbox().apply { setPadding(dp(6), dp(4), dp(4), dp(4)) }
+        val bottom = hbox().apply { setPadding(pp(1), 0, pp(1), 0) }
 
         when (mode) {
             DAY -> buildDay(header, content, cmds)
@@ -358,10 +358,10 @@ open class MainActivity : Activity() {
         }
 
         root.addView(header, lp(MATCH))
-        root.addView(View(this).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, dp(2)))
+        root.addView(View(this).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, pp(2)))
         root.addView(content, LP(MATCH, 0, 1f))
         bottom.addView(cmds, LP(0, WRAP, 1f))
-        bottom.addView(ViewIcon(this, 4, false) { showMenu() }, lp().apply { marginEnd = dp(1) })
+        bottom.addView(ViewIcon(this, 4, false) { showMenu() }, lp().apply { marginEnd = pp(1) })
         bottom.addView(ViewIcon(this, 5, false) { endEdit(); showFind() })
         root.addView(bottom, lp(MATCH))
     }
@@ -370,44 +370,44 @@ open class MainActivity : Activity() {
     private fun tab(h: LinearLayout, title: String, clock: Boolean = false) {
         val v = if (clock) TextClock(this).apply {
             format12Hour = "h:mm a"; format24Hour = "H:mm"
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, Palm.textSp); typeface = Typeface.DEFAULT_BOLD
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text)); includeFontPadding = false; typeface = Typeface.DEFAULT_BOLD
         } else label(title, bold = true)
         val t = v.apply {
             setTextColor(Palm.paper)
-            val r = dp(7).toFloat()
+            val r = pp(3).toFloat()
             background = GradientDrawable().apply {
                 setColor(Palm.INK); cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f)
             }
-            setPadding(dp(10), dp(4), dp(10), dp(3))
+            setPadding(pp(3), pp(1), pp(3), pp(1))
             setOnClickListener { showMenu() }
         }
-        h.addView(t, lp().apply { marginStart = dp(2); gravity = Gravity.BOTTOM })
+        h.addView(t, lp().apply { marginStart = pp(1); gravity = Gravity.BOTTOM })
         h.addView(View(this), LP(0, 1, 1f))
     }
 
     private fun arrow(left: Boolean, onClick: () -> Unit): TextView =
         label(if (left) "◀" else "▶", bold = true).apply {
-            setPadding(dp(8), dp(6), dp(8), dp(6))
+            setPadding(pp(2), pp(1), pp(2), pp(1))
             setOnClickListener { endEdit(); onClick() }
         }
 
     /** Width of a time column: the widest time at the current font, plus [pad], and never below [min]. */
     private fun timeColW(pad: Int, min: Int): Int =
-        maxOf(min, label("", bold = true).paint.measureText("00:00").toInt() + pad + dp(2))
+        maxOf(min, label("", bold = true).paint.measureText("00:00").toInt() + pad + pp(1))
 
     private fun viewIcons(cmds: LinearLayout) {
         for (k in 0..3) {
             cmds.addView(ViewIcon(this, k, mode == k) {
                 endEdit(); mode = k; prefs.lastView = k; render()
-            }, lp().apply { marginEnd = dp(1) })
+            }, lp().apply { marginEnd = pp(1) })
         }
     }
 
     private fun cmd(cmds: LinearLayout, text: String, onClick: () -> Unit) {
-        // 32 dp tall with 4 dp above and below: the outline lines up with the view icon boxes.
+        // 11 Palm px tall with 1 px above and below: the 13 px bottom row of the Palm.
         cmds.addView(palmButton(text, onClick).apply {
-            setPadding(dp(6), 0, dp(6), 0); minWidth = dp(36)
-        }, LP(WRAP, dp(32)).apply { marginStart = dp(3); topMargin = dp(4); bottomMargin = dp(4) })
+            setPadding(pp(3), 0, pp(3), 0); minWidth = pp(16)
+        }, LP(WRAP, pp(11)).apply { marginStart = pp(2); topMargin = pp(1); bottomMargin = pp(1) })
     }
 
     // ---------------- Day view ----------------
@@ -422,11 +422,11 @@ open class MainActivity : Activity() {
             val d = weekStart + i
             h.addView(label(Fmt.dowLetter[i], bold = true).apply {
                 gravity = Gravity.CENTER
-                setPadding(0, dp(5), 0, dp(5))
-                if (d == day) { background = box(Palm.INK, Palm.INK, 0f, 2f); setTextColor(Palm.paper) }
-                else if (d == today) background = box(Color.TRANSPARENT, Palm.INK, 1f, 2f)
+                setPadding(0, pp(1), 0, pp(1))
+                if (d == day) { background = box(Palm.INK, Palm.INK, 0f, 1f); setTextColor(Palm.paper) }
+                else if (d == today) background = box(Color.TRANSPARENT, Palm.INK, 1f, 1f)
                 setOnClickListener { endEdit(); day = d; selected = null; render() }
-            }, LP(dp(24), WRAP))
+            }, LP(pp(9), WRAP))
         }
         h.addView(arrow(false) { day += 7; render() })
 
@@ -443,10 +443,10 @@ open class MainActivity : Activity() {
         if (rows.isEmpty()) rows.add(Row(null, prefs.dayStart * 60, false))
 
         val (laneOf, nLanes) = lanes(timed)
-        val barW = if (prefs.timeBars) dp(6) + nLanes * dp(5) else 0
-        val timeW = timeColW(dp(8), dp(50))
-        // Rows have 2 dp above the text and 1 dp below. Time bar ticks meet the time text at its center.
-        val mid = dp(2) + label("", bold = true).lineHeight / 2
+        val barW = if (prefs.timeBars) pp(2) + nLanes * pp(3) else 0
+        val timeW = timeColW(pp(3), pp(20))
+        // Rows are one 11 px Palm line. Time bar ticks meet the time text at its center.
+        val mid = label("", bold = true).lineHeight / 2
 
         val col = vbox()
         var focusView: EditText? = null
@@ -469,7 +469,7 @@ open class MainActivity : Activity() {
             }
             r.addView(label(timeText, bold = true).apply {
                 gravity = Gravity.END
-                setPadding(dp(2), dp(2), dp(6), dp(1))
+                setPadding(pp(1), 0, pp(2), 0)
                 setTextColor(if (e == null) Palm.GRAY else Palm.INK)
                 setOnClickListener { endEdit(); timeTapped(row) }
                 maxLines = 1
@@ -479,11 +479,11 @@ open class MainActivity : Activity() {
             val slot = hbox(Gravity.TOP)
             if (e != null && isMasked(e)) {
                 slot.addView(label("").apply {
-                    background = box(Palm.LIGHT, Palm.LIGHT, 0f, 2f)
+                    background = box(Palm.LIGHT, Palm.LIGHT, 0f, 1f)
                     setOnClickListener { revealAsk(e) }
-                }, LP(0, dp(18), 1f).apply { topMargin = dp(2); marginEnd = dp(8) })
+                }, LP(0, pp(7), 1f).apply { topMargin = pp(2); marginEnd = pp(3) })
             } else {
-                val ed = rowEdit(e?.title ?: "").apply { setPadding(dp(2), dp(2), dp(4), dp(1)) }
+                val ed = rowEdit(e?.title ?: "").apply { setPadding(pp(1), 0, pp(1), 0) }
                 val key = if (e != null) "e${e.id}" else "s${row.min}"
                 ed.tag = key
                 ed.setOnFocusChangeListener { _, has ->
@@ -493,22 +493,22 @@ open class MainActivity : Activity() {
                 slot.addView(ed, LP(0, WRAP, 1f))
                 if (key == focusKey) focusView = ed
                 if (e != null && occ != null) {
-                    val icons = hbox().apply { setPadding(0, dp(2), dp(4), 0) }
+                    val icons = hbox().apply { setPadding(0, pp(1.5f), pp(1), 0) }
                     if (e.note.isNotEmpty()) icons.addView(IconView(this, IconView.NOTE).apply {
                         setOnClickListener { endEdit(); openNote(occ) }
-                    }, lp().apply { marginStart = dp(3) })
+                    }, lp().apply { marginStart = pp(1) })
                     if (e.alarm) icons.addView(IconView(this, IconView.ALARM).apply {
                         setOnClickListener { endEdit(); editEvent(occ) }
-                    }, lp().apply { marginStart = dp(3) })
+                    }, lp().apply { marginStart = pp(1) })
                     if (e.repeats) icons.addView(IconView(this, IconView.REPEAT).apply {
                         setOnClickListener { endEdit(); editEvent(occ) }
-                    }, lp().apply { marginStart = dp(3) })
+                    }, lp().apply { marginStart = pp(1) })
                     slot.addView(icons)
                 }
             }
             r.addView(vbox().apply {
                 addView(slot, lp(MATCH))
-                addView(DottedLine(this@MainActivity, Palm.GRAY), LP(MATCH, dp(1)))
+                addView(DottedLine(this@MainActivity, Palm.GRAY), LP(MATCH, pp(1)))
             }, LP(0, WRAP, 1f))
             col.addView(r, lp(MATCH))
         }
@@ -535,8 +535,11 @@ open class MainActivity : Activity() {
         setText(text)
         background = null
         setTextColor(Palm.INK)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, Palm.textSp)
-        setPadding(dp(2), dp(9), dp(4), dp(9))
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text))
+        includeFontPadding = false
+        minHeight = 0
+        minimumHeight = 0
+        setPadding(pp(1), 0, pp(1), 0)
         inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
         setHorizontallyScrolling(false)
         maxLines = 20
@@ -622,24 +625,24 @@ open class MainActivity : Activity() {
         h.addView(arrow(false) { stepDate(1) })
 
         val col = vbox()
-        val desc = label("Tap an event to see it. Tap it again to open its day.", size = Palm.textSp - 2).apply {
-            setPadding(dp(8), dp(4), dp(8), dp(4))
+        val desc = label("Tap an event to see it. Tap it again to open its day.", size = Palm.text - 1).apply {
+            setPadding(pp(3), pp(1), pp(3), pp(1))
             setTextColor(Palm.GRAY)
         }
         col.addView(desc, lp(MATCH))
-        val head = hbox().apply { setPadding(dp(28), 0, 0, dp(2)) }
+        val head = hbox().apply { setPadding(pp(12), 0, 0, pp(1)) }
         for (i in 0..6) {
             val d = ws + i
             val untimed = dayOccs(d).count { it.event.untimed }
             val cell = vbox().apply {
                 gravity = Gravity.CENTER_HORIZONTAL
                 setOnClickListener { goDay(d, null) }
-                if (d == today) background = box(Palm.INK, Palm.INK, 0f, 3f)
+                if (d == today) background = box(Palm.INK, Palm.INK, 0f, 1f)
             }
             val fg = if (d == today) Palm.paper else Palm.INK
-            cell.addView(label(Fmt.dowLetter[i], bold = true, size = Palm.textSp - 2).apply { setTextColor(fg) })
+            cell.addView(label(Fmt.dowLetter[i], bold = true, size = Palm.text - 1).apply { setTextColor(fg) })
             cell.addView(label(Fmt.ld(d).dayOfMonth.toString(), bold = true).apply { setTextColor(fg) })
-            cell.addView(label("◆".repeat(minOf(untimed, 3)), size = 9f).apply { setTextColor(fg) })
+            cell.addView(label("◆".repeat(minOf(untimed, 3)), size = 6f).apply { setTextColor(fg) })
             head.addView(cell, LP(0, WRAP, 1f))
         }
         col.addView(head, lp(MATCH))
@@ -653,7 +656,7 @@ open class MainActivity : Activity() {
         val sv = ScrollView(this).apply { addView(grid) }
         col.addView(sv, LP(MATCH, 0, 1f))
         content.addView(col)
-        sv.post { sv.scrollTo(0, (prefs.dayStart * dp(34))) }
+        sv.post { sv.scrollTo(0, prefs.dayStart * pp(11)) }
 
         viewIcons(cmds)
         cmd(cmds, "Go to") { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
@@ -667,7 +670,7 @@ open class MainActivity : Activity() {
         h.addView(arrow(true) { stepDate(-1) })
         h.addView(arrow(false) { stepDate(1) })
         content.addView(MonthGrid(this, this, d.year, d.monthValue),
-            FrameLayout.LayoutParams(MATCH, MATCH))
+            FrameLayout.LayoutParams(MATCH, WRAP))
         viewIcons(cmds)
         cmd(cmds, "Go to") { DateDialog(this, "Go to Date", day) { x -> day = x; render() }.show() }
     }
@@ -693,29 +696,29 @@ open class MainActivity : Activity() {
             .apply { setOnClickListener { goDay(day, null) } })
         h.addView(arrow(false) { stepDate(1) })
 
-        val col = vbox().apply { setPadding(dp(10), dp(6), dp(10), dp(10)) }
+        val col = vbox().apply { setPadding(pp(4), pp(2.5f), pp(4), pp(4)) }
 
         val occs = dayOccs(day)
-        if (occs.isEmpty()) col.addView(label("No appointments", size = Palm.textSp - 1).apply {
-            setTextColor(Palm.GRAY); setPadding(0, dp(6), 0, dp(6))
+        if (occs.isEmpty()) col.addView(label("No appointments", size = Palm.text - 1).apply {
+            setTextColor(Palm.GRAY); setPadding(0, pp(2.5f), 0, pp(2.5f))
         })
-        val timeW = timeColW(dp(8), dp(48))
+        val timeW = timeColW(pp(3), pp(19))
         for (o in occs) {
             val r = hbox(Gravity.TOP).apply {
-                setPadding(0, dp(5), 0, dp(5))
+                setPadding(0, pp(2), 0, pp(2))
                 setOnClickListener { if (isMasked(o.event)) revealAsk(o.event) else goDay(day, o) }
             }
             r.addView(label(if (o.event.untimed) "•" else Fmt.timeShort(o.event.start), bold = true).apply {
-                gravity = Gravity.END; setPadding(0, 0, dp(8), 0); maxLines = 1
+                gravity = Gravity.END; setPadding(0, 0, pp(3), 0); maxLines = 1
             }, LP(timeW, WRAP))
-            if (isMasked(o.event)) r.addView(label("").apply { background = box(Palm.LIGHT, Palm.LIGHT, 0f, 2f) },
-                LP(0, dp(18), 1f))
+            if (isMasked(o.event)) r.addView(label("").apply { background = box(Palm.LIGHT, Palm.LIGHT, 0f, 1f) },
+                LP(0, pp(7), 1f))
             else r.addView(label(o.event.title.ifBlank { "(no description)" }), LP(0, WRAP, 1f))
             col.addView(r, lp(MATCH))
         }
 
         col.addView(View(this).apply { setBackgroundColor(Palm.INK) },
-            LP(MATCH, dp(2)).apply { topMargin = dp(10); bottomMargin = dp(4) })
+            LP(MATCH, pp(1)).apply { topMargin = pp(4); bottomMargin = pp(1.5f) })
         val th = hbox()
         th.addView(label("To Do", bold = true), LP(0, WRAP, 1f))
         th.addView(popupTrigger(categoryLabel(prefs.todoCategory)) { tv ->
@@ -723,18 +726,18 @@ open class MainActivity : Activity() {
         })
         col.addView(th, lp(MATCH))
         val tds = agendaTodos()
-        if (tds.isEmpty()) col.addView(label("No open items",size = Palm.textSp - 1).apply {
-            setTextColor(Palm.GRAY); setPadding(0, dp(6), 0, dp(6))
+        if (tds.isEmpty()) col.addView(label("No open items",size = Palm.text - 1).apply {
+            setTextColor(Palm.GRAY); setPadding(0, pp(2.5f), 0, pp(2.5f))
         })
         for (t in tds) {
             val r = hbox(Gravity.TOP)
-            r.addView(checkBox("", t.done) { b -> completeTodo(t, b) }, lp().apply { topMargin = dp(2) })
+            r.addView(checkBox("", t.done) { b -> completeTodo(t, b) }, lp().apply { topMargin = pp(1) })
             if (prefs.showPriorities) r.addView(todoPriorityLabel(t))
             if (isMasked(t)) r.addView(label("").apply {
-                background = box(Palm.LIGHT, Palm.LIGHT, 0f, 2f); setOnClickListener { revealAsk(t) }
-            }, LP(0, dp(22), 1f).apply { topMargin = dp(8); marginEnd = dp(8) })
+                background = box(Palm.LIGHT, Palm.LIGHT, 0f, 1f); setOnClickListener { revealAsk(t) }
+            }, LP(0, pp(7), 1f).apply { topMargin = pp(2); marginEnd = pp(3) })
             else r.addView(label(t.title.ifBlank { "(no description)" }).apply {
-                setPadding(dp(2), dp(9), dp(4), dp(9))
+                setPadding(pp(1), 0, pp(1), 0)
                 setOnClickListener { openTodoApp(t.id) }
             }, LP(0, WRAP, 1f))
             if (prefs.showDueDates) r.addView(todoDueLabel(t, day))
@@ -781,18 +784,18 @@ open class MainActivity : Activity() {
         return label(txt, bold = late).apply {
             gravity = Gravity.END
             maxLines = 1
-            setPadding(dp(6), dp(9), dp(4), dp(9))
+            setPadding(pp(2), 0, pp(1), 0)
             setOnClickListener { tv -> endEdit(); pickDue(tv, t.due) { d -> t.due = d; saveTodo(t) } }
         }
     }
 
     /** Category column, as set in Show options. One line, cut with "..." when long. */
     private fun todoCategoryLabel(t: Todo): TextView =
-        label(store.categoryName(t.category), size = Palm.textSp - 2).apply {
+        label(store.categoryName(t.category), size = Palm.text - 1).apply {
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
-            maxWidth = dp(96)
-            setPadding(dp(6), dp(10), dp(8), dp(9))
+            maxWidth = pp(38)
+            setPadding(pp(2), 0, pp(3), 0)
             setOnClickListener { tv ->
                 endEdit()
                 pickCategory(tv, t.category, includeAll = false) { id -> t.category = id; saveTodo(t) }
@@ -801,7 +804,7 @@ open class MainActivity : Activity() {
 
     private fun todoPriorityLabel(t: Todo): TextView =
         label("${t.priority}", bold = true).apply {
-            setPadding(dp(2), dp(9), dp(6), dp(9))
+            setPadding(pp(1), 0, pp(2), 0)
             setOnClickListener { tv ->
                 endEdit()
                 popupList(tv, listOf("1", "2", "3", "4", "5"), t.priority - 1) { i -> t.priority = i + 1; saveTodo(t) }
@@ -826,17 +829,17 @@ open class MainActivity : Activity() {
         val items = visibleTodos()
         var focusView: EditText? = null
         if (items.isEmpty()) col.addView(label("No items. Tap New to add one.").apply {
-            setTextColor(Palm.GRAY); setPadding(dp(12), dp(16), dp(12), dp(16))
+            setTextColor(Palm.GRAY); setPadding(pp(5), pp(6.5f), pp(5), pp(6.5f))
         })
         for (t in items) {
             val r = hbox(Gravity.TOP)
-            r.addView(checkBox("", t.done) { b -> endEdit(); completeTodo(t, b) }, lp().apply { topMargin = dp(2) })
+            r.addView(checkBox("", t.done) { b -> endEdit(); completeTodo(t, b) }, lp().apply { topMargin = pp(1) })
             if (prefs.showPriorities) r.addView(todoPriorityLabel(t))
             if (isMasked(t)) {
                 r.addView(label("").apply {
-                    background = box(Palm.LIGHT, Palm.LIGHT, 0f, 2f)
+                    background = box(Palm.LIGHT, Palm.LIGHT, 0f, 1f)
                     setOnClickListener { revealAsk(t) }
-                }, LP(0, dp(22), 1f).apply { topMargin = dp(8); marginEnd = dp(8) })
+                }, LP(0, pp(7), 1f).apply { topMargin = pp(2); marginEnd = pp(3) })
             } else {
                 val ed = rowEdit(t.title)
                 val key = "t${t.id}"
@@ -851,7 +854,7 @@ open class MainActivity : Activity() {
             if (prefs.showDueDates) r.addView(todoDueLabel(t, today))
             if (prefs.showCategories) r.addView(todoCategoryLabel(t))
             col.addView(r, lp(MATCH))
-            col.addView(DottedLine(this), LP(MATCH, dp(1)))
+            col.addView(DottedLine(this), LP(MATCH, pp(1)))
         }
         content.addView(ScrollView(this).apply { addView(col); isFillViewport = true })
         focusView?.let { f -> f.post { f.requestFocus(); f.setSelection(f.text.length) } }
@@ -987,7 +990,7 @@ open class MainActivity : Activity() {
             !(hideP && it.isPrivate) && (it.title.contains(q, true) || it.note.contains(q, true))
         }
         fun result(text: String, onClick: () -> Unit) =
-            d.add(label(text).apply { setPadding(dp(8), dp(7), dp(4), dp(7)); setOnClickListener { d.dismiss(); onClick() } }, 0)
+            d.add(label(text).apply { setPadding(pp(3), pp(3), pp(1.5f), pp(3)); setOnClickListener { d.dismiss(); onClick() } }, 0)
         d.add(label("Date Book", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
         if (evs.isEmpty()) d.add(label("  No matches"), 0)
         for (e in evs) {
@@ -1074,8 +1077,8 @@ open class MainActivity : Activity() {
 /** The thin dotted line under each Day view and To Do line. */
 class DottedLine(ctx: Context, color: Int = Palm.LIGHT) : View(ctx) {
     private val p = Paint().apply {
-        this.color = color; strokeWidth = ctx.dp(1f).toFloat()
-        pathEffect = android.graphics.DashPathEffect(floatArrayOf(ctx.dp(2).toFloat(), ctx.dp(2).toFloat()), 0f)
+        this.color = color; strokeWidth = ctx.ppf(1f)
+        pathEffect = android.graphics.DashPathEffect(floatArrayOf(ctx.ppf(1f), ctx.ppf(1f)), 0f)
     }
     override fun onDraw(c: Canvas) { c.drawLine(0f, height / 2f, width.toFloat(), height / 2f, p) }
 }
@@ -1097,11 +1100,11 @@ class TimeBar(
     private val nextFree: Boolean,
     private val mid: Int
 ) : View(ctx) {
-    private val p = Paint().apply { color = Palm.INK; strokeWidth = ctx.dp(1.6f).toFloat() }
+    private val p = Paint().apply { color = Palm.INK; strokeWidth = ctx.ppf(1f) }
 
     override fun onDraw(c: Canvas) {
-        val lw = context.dp(5).toFloat()
-        val x0 = context.dp(4).toFloat()
+        val lw = context.ppf(3f)
+        val x0 = context.ppf(1.5f)
         val xe = width.toFloat()
         val y = mid.toFloat()
         for (o in timed) {
@@ -1117,7 +1120,7 @@ class TimeBar(
             val startsHere = e.start >= rs && e.start < re
             val endsHere = end > rs && (end < re || (end == re && !nextFree))
             val top = if (startsHere) y else 0f
-            val bot = if (endsHere) height - context.dp(2).toFloat() else height.toFloat()
+            val bot = if (endsHere) height - context.ppf(1f) else height.toFloat()
             c.drawLine(x, top, x, maxOf(top, bot), p)
             if (startsHere) c.drawLine(x, top, xe, top, p)
             if (endsHere) c.drawLine(x, maxOf(top, bot), xe, maxOf(top, bot), p)
@@ -1137,11 +1140,11 @@ class MenuBar(
     init {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         val frame = act.vbox().apply {
-            background = act.box(Palm.paper, Palm.INK, 2f, 4f)
-            setPadding(act.dp(2), act.dp(2), act.dp(2), act.dp(4))
+            background = act.box(Palm.paper, Palm.INK, 1f, 1.5f)
+            setPadding(act.pp(1), act.pp(1), act.pp(1), act.pp(1.5f))
         }
         frame.addView(titles, lp(MATCH))
-        frame.addView(View(act).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, act.dp(1)))
+        frame.addView(View(act).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, act.pp(1)))
         frame.addView(items, lp(MATCH))
         setContentView(frame)
         window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
@@ -1154,7 +1157,7 @@ class MenuBar(
         titles.removeAllViews()
         menus.forEachIndexed { i, (name, _) ->
             titles.addView(act.label(name, bold = true).apply {
-                setPadding(act.dp(12), act.dp(7), act.dp(12), act.dp(7))
+                setPadding(act.pp(5), act.pp(3), act.pp(5), act.pp(3))
                 if (i == open) { setBackgroundColor(Palm.INK); setTextColor(Palm.paper) }
                 setOnClickListener { open = i; draw() }
             })
@@ -1162,7 +1165,7 @@ class MenuBar(
         items.removeAllViews()
         for ((name, action) in menus[open].second) {
             items.addView(act.label(name).apply {
-                setPadding(act.dp(16), act.dp(9), act.dp(16), act.dp(9))
+                setPadding(act.pp(6.5f), act.pp(3.5f), act.pp(6.5f), act.pp(3.5f))
                 setOnClickListener { dismiss(); action() }
             }, lp(MATCH))
         }

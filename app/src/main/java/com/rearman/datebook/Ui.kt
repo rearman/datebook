@@ -3,7 +3,11 @@ package com.rearman.datebook
 import android.app.Dialog
 import android.content.Context
 import android.content.res.ColorStateList
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.Paint
+import android.graphics.PixelFormat
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -24,6 +28,7 @@ import android.widget.PopupWindow
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import kotlin.math.roundToInt
 
 /** Palm OS look: black ink on a white (or green LCD) screen, with grays for shading. */
 object Palm {
@@ -31,11 +36,12 @@ object Palm {
     const val GRAY = 0xFF808080.toInt()
     const val LIGHT = 0xFFC4C4C4.toInt()
     var paper = Color.WHITE
-    var textSp = 15f
+    /** Text size in Palm pixels. 9.4 gives the 11 px line of the Palm standard font. */
+    var text = 9.4f
 
     fun apply(p: Prefs) {
         paper = if (p.greenScreen) 0xFFC9D3A8.toInt() else Color.WHITE
-        textSp = when (p.font) { 0 -> 13f; 2 -> 18f; else -> 15f }
+        text = when (p.font) { 0 -> 8f; 2 -> 12f; else -> 9.4f }
     }
 }
 
@@ -49,13 +55,22 @@ fun Context.dp(v: Float): Int =
 
 fun Context.dp(v: Int): Int = dp(v.toFloat())
 
+/** Device pixels for [v] Palm pixels. The shorter screen side is 160 Palm px, as on the Palm IIIxe. */
+fun Context.ppf(v: Float): Float =
+    v * minOf(resources.displayMetrics.widthPixels, resources.displayMetrics.heightPixels) / 160f
+
+fun Context.pp(v: Float): Int = if (v <= 0f) 0 else maxOf(1, ppf(v).roundToInt())
+
+fun Context.pp(v: Int): Int = pp(v.toFloat())
+
 fun lp(w: Int = WRAP, h: Int = WRAP, weight: Float = 0f) = LP(w, h, weight)
 
-fun Context.label(text: String, bold: Boolean = false, size: Float = Palm.textSp): TextView =
+fun Context.label(text: String, bold: Boolean = false, size: Float = Palm.text): TextView =
     TextView(this).apply {
         this.text = text
         setTextColor(Palm.INK)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, size)
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(size))
+        includeFontPadding = false
         if (bold) typeface = Typeface.DEFAULT_BOLD
     }
 
@@ -64,20 +79,20 @@ fun Context.hbox(gravity: Int = Gravity.CENTER_VERTICAL): LinearLayout =
 
 fun Context.vbox(): LinearLayout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
-fun Context.box(fill: Int, stroke: Int, strokeDp: Float, radiusDp: Float, dashed: Boolean = false): GradientDrawable =
+fun Context.box(fill: Int, stroke: Int, strokePp: Float, radiusPp: Float, dashed: Boolean = false): GradientDrawable =
     GradientDrawable().apply {
         setColor(fill)
-        cornerRadius = dp(radiusDp).toFloat()
-        if (dashed) setStroke(dp(strokeDp), stroke, dp(3).toFloat(), dp(2).toFloat())
-        else if (strokeDp > 0) setStroke(dp(strokeDp), stroke)
+        cornerRadius = pp(radiusPp).toFloat()
+        if (dashed) setStroke(pp(strokePp), stroke, ppf(1f), ppf(1f))
+        else if (strokePp > 0) setStroke(pp(strokePp), stroke)
     }
 
 /** Rounded Palm command button. Inverts while pressed. */
 fun Context.palmButton(text: String, onClick: () -> Unit): TextView =
     label(text, bold = true).apply {
         gravity = Gravity.CENTER
-        val normal = box(Palm.paper, Palm.INK, 1.5f, 9f)
-        val pressed = box(Palm.INK, Palm.INK, 1.5f, 9f)
+        val normal = box(Palm.paper, Palm.INK, 1f, 3.5f)
+        val pressed = box(Palm.INK, Palm.INK, 1f, 3.5f)
         background = StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_pressed), pressed)
             addState(intArrayOf(), normal)
@@ -88,23 +103,23 @@ fun Context.palmButton(text: String, onClick: () -> Unit): TextView =
                 intArrayOf(Palm.paper, Palm.INK)
             )
         )
-        setPadding(dp(12), dp(5), dp(12), dp(5))
-        minWidth = dp(52)
+        setPadding(pp(3), pp(1), pp(3), pp(1))
+        minWidth = pp(16)
         setOnClickListener { onClick() }
     }
 
 /** Palm selector trigger: a value in a dotted box. Tap to change it. */
 fun Context.selector(text: String, onClick: (TextView) -> Unit): TextView =
     label(text).apply {
-        background = box(Color.TRANSPARENT, Palm.GRAY, 1f, 2f, dashed = true)
-        setPadding(dp(6), dp(4), dp(6), dp(4))
+        background = box(Color.TRANSPARENT, Palm.GRAY, 1f, 1f, dashed = true)
+        setPadding(pp(2), pp(1), pp(2), pp(1))
         setOnClickListener { onClick(this) }
     }
 
 /** Palm pop-up trigger: "▼ value". */
 fun Context.popupTrigger(text: String, onClick: (TextView) -> Unit): TextView =
     label("▼ $text", bold = true).apply {
-        setPadding(dp(4), dp(4), dp(8), dp(4))
+        setPadding(pp(1), pp(1), pp(2), pp(1))
         setOnClickListener { onClick(this) }
     }
 
@@ -115,10 +130,52 @@ fun Context.checkBox(text: String, checked: Boolean, onChange: (Boolean) -> Unit
         this.text = text
         isChecked = checked
         setTextColor(Palm.INK)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, Palm.textSp)
-        buttonTintList = ColorStateList.valueOf(Palm.INK)
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text))
+        includeFontPadding = false
+        buttonDrawable = PalmCheckDrawable(this@checkBox, pp(9))
+        minHeight = 0
+        minimumHeight = 0
+        minWidth = 0
+        minimumWidth = 0
+        setPadding(pp(2), 0, 0, 0)
         setOnCheckedChangeListener { _, b -> onChange(b) }
     }
+
+/** Palm check box: a square with a 1 Palm px frame, and a check mark when checked. */
+class PalmCheckDrawable(ctx: Context, private val size: Int) : Drawable() {
+    private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Palm.INK; style = Paint.Style.STROKE; strokeWidth = ctx.ppf(1f)
+    }
+    private var checked = false
+
+    override fun getIntrinsicWidth() = size
+    override fun getIntrinsicHeight() = size
+    override fun isStateful() = true
+
+    override fun onStateChange(state: IntArray): Boolean {
+        val c = state.contains(android.R.attr.state_checked)
+        if (c == checked) return false
+        checked = c
+        invalidateSelf()
+        return true
+    }
+
+    override fun draw(c: Canvas) {
+        val b = bounds
+        val h = p.strokeWidth / 2
+        c.drawRect(b.left + h, b.top + h, b.right - h, b.bottom - h, p)
+        if (checked) {
+            val l = b.left.toFloat(); val t = b.top.toFloat(); val w = b.width().toFloat()
+            c.drawLine(l + w * 0.2f, t + w * 0.5f, l + w * 0.42f, t + w * 0.75f, p)
+            c.drawLine(l + w * 0.42f, t + w * 0.75f, l + w * 0.85f, t + w * 0.2f, p)
+        }
+    }
+
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(colorFilter: ColorFilter?) {}
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity() = PixelFormat.TRANSLUCENT
+}
 
 fun Context.field(text: String, hint: String = "", multiLine: Boolean = false): EditText =
     EditText(this).apply {
@@ -126,7 +183,11 @@ fun Context.field(text: String, hint: String = "", multiLine: Boolean = false): 
         this.hint = hint
         setTextColor(Palm.INK)
         setHintTextColor(Palm.GRAY)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, Palm.textSp)
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text))
+        includeFontPadding = false
+        minHeight = 0
+        minimumHeight = 0
+        setPadding(pp(1), pp(1), pp(1), pp(1))
         backgroundTintList = ColorStateList.valueOf(Palm.GRAY)
         inputType = if (multiLine)
             InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
@@ -135,7 +196,7 @@ fun Context.field(text: String, hint: String = "", multiLine: Boolean = false): 
 
 fun Context.numberField(value: Int): EditText = field(value.toString()).apply {
     inputType = InputType.TYPE_CLASS_NUMBER
-    minWidth = dp(48)
+    minWidth = pp(20)
     gravity = Gravity.CENTER
 }
 
@@ -159,7 +220,7 @@ class PushGroup(
         labels.forEachIndexed { i, s ->
             val tv = ctx.label(s, bold = true).apply {
                 gravity = Gravity.CENTER
-                setPadding(ctx.dp(4), ctx.dp(5), ctx.dp(4), ctx.dp(5))
+                setPadding(ctx.pp(2), ctx.pp(1), ctx.pp(2), ctx.pp(1))
                 setOnClickListener {
                     if (multi) on[i] = !on[i] else selected = i
                     refresh()
@@ -167,7 +228,7 @@ class PushGroup(
                 }
             }
             cells.add(tv)
-            view.addView(tv, LP(0, WRAP, 1f).apply { marginEnd = ctx.dp(2) })
+            view.addView(tv, LP(0, WRAP, 1f).apply { marginEnd = ctx.pp(1) })
         }
         refresh()
     }
@@ -177,7 +238,7 @@ class PushGroup(
     fun refresh() {
         cells.forEachIndexed { i, tv ->
             val sel = if (multi) on[i] else i == selected
-            tv.background = ctx.box(if (sel) Palm.INK else Palm.paper, Palm.INK, 1.5f, 3f)
+            tv.background = ctx.box(if (sel) Palm.INK else Palm.paper, Palm.INK, 1f, 1.5f)
             tv.setTextColor(if (sel) Palm.paper else Palm.INK)
         }
     }
@@ -192,21 +253,21 @@ class MaxScroll(ctx: Context, private val maxPx: Int) : ScrollView(ctx) {
 
 /** A Palm modal form: black title bar, bordered body, buttons along the bottom. */
 open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true) : Dialog(ctx) {
-    val body: LinearLayout = ctx.vbox().apply { setPadding(ctx.dp(12), ctx.dp(8), ctx.dp(12), ctx.dp(4)) }
-    val buttons: LinearLayout = ctx.hbox().apply { setPadding(ctx.dp(10), ctx.dp(6), ctx.dp(10), ctx.dp(10)) }
+    val body: LinearLayout = ctx.vbox().apply { setPadding(ctx.pp(3), ctx.pp(2), ctx.pp(3), ctx.pp(1)) }
+    val buttons: LinearLayout = ctx.hbox().apply { setPadding(ctx.pp(3), ctx.pp(2), ctx.pp(3), ctx.pp(3)) }
     private val c = ctx
 
     init {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         val frame = ctx.vbox().apply {
-            background = ctx.box(Palm.paper, Palm.INK, 2.5f, 6f)
-            setPadding(ctx.dp(2), ctx.dp(2), ctx.dp(2), ctx.dp(2))
+            background = ctx.box(Palm.paper, Palm.INK, 1.5f, 2f)
+            setPadding(ctx.pp(1), ctx.pp(1), ctx.pp(1), ctx.pp(1))
         }
         val bar = ctx.label(title, bold = true).apply {
             gravity = Gravity.CENTER
             setTextColor(Palm.paper)
-            background = ctx.box(Palm.INK, Palm.INK, 0f, 4f)
-            setPadding(ctx.dp(6), ctx.dp(4), ctx.dp(6), ctx.dp(4))
+            background = ctx.box(Palm.INK, Palm.INK, 0f, 1.5f)
+            setPadding(ctx.pp(2), ctx.pp(1), ctx.pp(2), ctx.pp(1))
         }
         frame.addView(bar, lp(MATCH))
         if (scroll) {
@@ -220,30 +281,31 @@ open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true) : Dia
         setContentView(frame)
         window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         window?.setLayout(
-            (ctx.resources.displayMetrics.widthPixels - ctx.dp(24)),
+            (ctx.resources.displayMetrics.widthPixels - ctx.pp(4)),
             WindowManager.LayoutParams.WRAP_CONTENT
         )
         window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
     }
 
-    fun add(v: View, top: Int = 6): View {
-        body.addView(v, LP(MATCH, WRAP).apply { topMargin = c.dp(top) })
+    /** Adds [v] to the body. [top] is the gap above [v], in Palm px. */
+    fun add(v: View, top: Int = 2): View {
+        body.addView(v, LP(MATCH, WRAP).apply { topMargin = c.pp(top) })
         return v
     }
 
     /** "Label:  [control]" row, Palm style with right-aligned bold label. */
     fun row(name: String, vararg views: View): LinearLayout {
         val r = c.hbox()
-        r.addView(c.label(name, bold = true).apply { gravity = Gravity.END; minWidth = c.dp(76) },
-            lp().apply { marginEnd = c.dp(8) })
-        views.forEach { r.addView(it, lp().apply { marginEnd = c.dp(6) }) }
+        r.addView(c.label(name, bold = true).apply { gravity = Gravity.END; minWidth = c.pp(40) },
+            lp().apply { marginEnd = c.pp(3) })
+        views.forEach { r.addView(it, lp().apply { marginEnd = c.pp(2) }) }
         add(r)
         return r
     }
 
     fun button(text: String, onClick: () -> Unit): TextView {
         val b = c.palmButton(text, onClick)
-        buttons.addView(b, lp().apply { marginEnd = c.dp(8) })
+        buttons.addView(b, lp().apply { marginEnd = c.pp(4) })
         return b
     }
 }
@@ -251,14 +313,14 @@ open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true) : Dia
 /** A Palm pop-up list next to its trigger. */
 fun Context.popupList(anchor: View, items: List<String>, selected: Int, onPick: (Int) -> Unit) {
     val col = vbox().apply {
-        background = box(Palm.paper, Palm.INK, 1.5f, 3f)
-        setPadding(dp(2), dp(2), dp(2), dp(2))
+        background = box(Palm.paper, Palm.INK, 1f, 1.5f)
+        setPadding(pp(1), pp(1), pp(1), pp(1))
     }
     val sv = ScrollView(this).apply { addView(col) }
     val pw = PopupWindow(sv, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true)
     items.forEachIndexed { i, s ->
         val tv = label(s, bold = i == selected).apply {
-            setPadding(dp(12), dp(7), dp(24), dp(7))
+            setPadding(pp(3), pp(1), pp(8), pp(1))
             if (i == selected) { setBackgroundColor(Palm.INK); setTextColor(Palm.paper) }
             setOnClickListener { pw.dismiss(); onPick(i) }
         }
@@ -275,7 +337,7 @@ fun Context.popupList(anchor: View, items: List<String>, selected: Int, onPick: 
 /** A message with buttons. Each button closes the dialog and then runs its action. */
 fun Context.ask(title: String, message: String, vararg choices: Pair<String, () -> Unit>) {
     val d = PalmDialog(this, title)
-    d.add(label(message).apply { setPadding(0, dp(4), 0, dp(8)) })
+    d.add(label(message).apply { setPadding(0, pp(1), 0, pp(3)) })
     for ((text, action) in choices) d.button(text) { d.dismiss(); action() }
     d.show()
 }
@@ -286,10 +348,10 @@ fun Context.toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show(
 class IconView(ctx: Context, private val kind: Int) : View(ctx) {
     companion object { const val NOTE = 0; const val ALARM = 1; const val REPEAT = 2 }
     private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; style = android.graphics.Paint.Style.STROKE; strokeWidth = ctx.dp(1.4f).toFloat()
+        color = Palm.INK; style = android.graphics.Paint.Style.STROKE; strokeWidth = ctx.ppf(1f)
     }
 
-    override fun onMeasure(w: Int, h: Int) { val s = context.dp(18); setMeasuredDimension(s, s) }
+    override fun onMeasure(w: Int, h: Int) { val s = context.pp(8); setMeasuredDimension(s, s) }
 
     override fun onDraw(c: android.graphics.Canvas) {
         val s = width.toFloat()

@@ -16,7 +16,7 @@ class DateDialog(
     private var year: Int
     private var month: Int
     private val selected: Long = initial
-    private val yearLabel = ctx.label("", bold = true, size = Palm.textSp + 2)
+    private val yearLabel = ctx.label("", bold = true, size = Palm.text + 2)
     private val months: PushGroup
     private val grid = ctx.vbox()
 
@@ -26,7 +26,7 @@ class DateDialog(
         month = d.monthValue
         val yr = ctx.hbox(Gravity.CENTER)
         yr.addView(ctx.palmButton("◀") { year--; draw() })
-        yr.addView(yearLabel, lp().apply { marginStart = ctx.dp(18); marginEnd = ctx.dp(18) })
+        yr.addView(yearLabel, lp().apply { marginStart = ctx.pp(7); marginEnd = ctx.pp(7) })
         yr.addView(ctx.palmButton("▶") { year++; draw() })
         add(yr)
         months = PushGroup(ctx, Fmt.monthShort.toList(), month - 1) { g -> month = g.selected + 1; draw() }
@@ -37,12 +37,12 @@ class DateDialog(
         for (r in 0 until 3) {
             val row = ctx.hbox()
             for (c in 0 until 4) row.addView(cells[r * 4 + c], LinearLayout.LayoutParams(0, WRAP, 1f).apply {
-                marginEnd = ctx.dp(2); topMargin = ctx.dp(2)
+                marginEnd = ctx.pp(1); topMargin = ctx.pp(1)
             })
             rows.addView(row, lp(MATCH))
         }
         add(rows)
-        add(grid, 10)
+        add(grid, 4)
         button("Cancel") { dismiss() }
         button("Today") { dismiss(); onPick(LocalDate.now().toEpochDay()) }
         draw()
@@ -69,10 +69,10 @@ class DateDialog(
                     val ep = LocalDate.of(year, month, n).toEpochDay()
                     cell = ctx.label(n.toString()).apply {
                         gravity = Gravity.CENTER
-                        setPadding(0, ctx.dp(7), 0, ctx.dp(7))
+                        setPadding(0, ctx.pp(3), 0, ctx.pp(3))
                         when {
-                            ep == selected -> { background = ctx.box(Palm.INK, Palm.INK, 0f, 3f); setTextColor(Palm.paper) }
-                            ep == today -> background = ctx.box(android.graphics.Color.TRANSPARENT, Palm.INK, 1.2f, 3f)
+                            ep == selected -> { background = ctx.box(Palm.INK, Palm.INK, 0f, 1f); setTextColor(Palm.paper) }
+                            ep == today -> background = ctx.box(android.graphics.Color.TRANSPARENT, Palm.INK, 1f, 1f)
                         }
                         setOnClickListener { dismiss(); onPick(ep) }
                     }
@@ -106,16 +106,16 @@ class TimeDialog(
         val boxes = ctx.hbox()
         for ((i, b) in listOf(startBox, endBox).withIndex()) {
             val col = ctx.vbox()
-            col.addView(ctx.label(if (i == 0) "Start Time" else "End Time", size = Palm.textSp - 2))
-            b.setPadding(ctx.dp(8), ctx.dp(6), ctx.dp(8), ctx.dp(6))
+            col.addView(ctx.label(if (i == 0) "Start Time" else "End Time", size = Palm.text - 1))
+            b.setPadding(ctx.pp(3), ctx.pp(2.5f), ctx.pp(3), ctx.pp(2.5f))
             b.gravity = Gravity.CENTER
             b.setOnClickListener { editingEnd = i == 1; draw() }
             col.addView(b, lp(MATCH))
-            boxes.addView(col, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.dp(8) })
+            boxes.addView(col, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.pp(3) })
         }
         add(boxes)
 
-        add(ctx.label("Hour", bold = true, size = Palm.textSp - 2), 10)
+        add(ctx.label("Hour", bold = true, size = Palm.text - 1), 4)
         val hours = if (Fmt.h24) (0..23).toList() else (1..12).toList()
         val perRow = 6
         hours.chunked(perRow).forEach { chunk ->
@@ -124,16 +124,16 @@ class TimeDialog(
                 val c = cell(if (Fmt.h24) h.toString() else h.toString()) { pickHour(h) }
                 c.tag = h
                 hourCells.add(c)
-                row.addView(c, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.dp(2); topMargin = ctx.dp(2) })
+                row.addView(c, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.pp(1); topMargin = ctx.pp(1) })
             }
             add(row, 0)
         }
         if (!Fmt.h24) {
             val g = PushGroup(ctx, listOf("AM", "PM"), 0) { g -> pickAmPm(g.selected == 1) }
             ampm = g
-            add(g.view, 6)
+            add(g.view, 2)
         }
-        add(ctx.label("Minute", bold = true, size = Palm.textSp - 2), 10)
+        add(ctx.label("Minute", bold = true, size = Palm.text - 1), 4)
         (0 until 12).chunked(6).forEach { chunk ->
             val row = ctx.hbox()
             chunk.forEach { k ->
@@ -141,7 +141,7 @@ class TimeDialog(
                 val c = cell("%02d".format(m)) { pickMinute(m) }
                 c.tag = m
                 minCells.add(c)
-                row.addView(c, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.dp(2); topMargin = ctx.dp(2) })
+                row.addView(c, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.pp(1); topMargin = ctx.pp(1) })
             }
             add(row, 0)
         }
@@ -153,7 +153,7 @@ class TimeDialog(
 
     private fun cell(text: String, onClick: () -> Unit) = ctx.label(text, bold = true).apply {
         gravity = Gravity.CENTER
-        setPadding(0, ctx.dp(6), 0, ctx.dp(6))
+        setPadding(0, ctx.pp(2.5f), 0, ctx.pp(2.5f))
         setOnClickListener { onClick() }
     }
 
@@ -194,7 +194,7 @@ class TimeDialog(
         endBox.text = Fmt.time(e)
         for ((i, b) in listOf(startBox, endBox).withIndex()) {
             val sel = (i == 1) == editingEnd
-            b.background = ctx.box(if (sel) Palm.INK else Palm.paper, Palm.INK, 1.5f, 3f)
+            b.background = ctx.box(if (sel) Palm.INK else Palm.paper, Palm.INK, 1f, 1f)
             b.setTextColor(if (sel) Palm.paper else Palm.INK)
         }
         val v = cur()
@@ -206,7 +206,7 @@ class TimeDialog(
     }
 
     private fun mark(tv: TextView, sel: Boolean) {
-        tv.background = ctx.box(if (sel) Palm.INK else Palm.paper, Palm.INK, 1f, 3f)
+        tv.background = ctx.box(if (sel) Palm.INK else Palm.paper, Palm.INK, 1f, 1f)
         tv.setTextColor(if (sel) Palm.paper else Palm.INK)
     }
 }
@@ -235,8 +235,8 @@ class RepeatDialog(
             buildArea()
         }
         add(tabs.view)
-        add(area, 10)
-        add(summary.apply { setPadding(0, ctx.dp(10), 0, ctx.dp(4)) })
+        add(area, 4)
+        add(summary.apply { setPadding(0, ctx.pp(4), 0, ctx.pp(1.5f)) })
         button("OK") {
             ev.every = every.text.toString().toIntOrNull()?.coerceIn(1, 99) ?: 1
             if (ev.repeat == Repeat.NONE) { ev.repeatEnd = -1; ev.exceptions.clear() }
@@ -253,12 +253,12 @@ class RepeatDialog(
     private fun buildArea() {
         area.removeAllViews()
         if (ev.repeat == Repeat.NONE) {
-            area.addView(ctx.label("No Repeat").apply { gravity = Gravity.CENTER; setPadding(0, ctx.dp(16), 0, ctx.dp(16)) },
+            area.addView(ctx.label("No Repeat").apply { gravity = Gravity.CENTER; setPadding(0, ctx.pp(6.5f), 0, ctx.pp(6.5f)) },
                 lp(MATCH))
             updateSummary(); return
         }
         val r1 = ctx.hbox()
-        r1.addView(ctx.label("Every:", bold = true).apply { minWidth = ctx.dp(80); gravity = Gravity.END })
+        r1.addView(ctx.label("Every:", bold = true).apply { minWidth = ctx.pp(32); gravity = Gravity.END })
         every = ctx.numberField(maxOf(1, ev.every)).apply {
             addTextChangedListener(object : android.text.TextWatcher {
                 override fun afterTextChanged(s: android.text.Editable?) {
@@ -268,12 +268,12 @@ class RepeatDialog(
                 override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
             })
         }
-        r1.addView(every, lp().apply { marginStart = ctx.dp(8) })
-        r1.addView(ctx.label(unit()), lp().apply { marginStart = ctx.dp(6) })
+        r1.addView(every, lp().apply { marginStart = ctx.pp(3) })
+        r1.addView(ctx.label(unit()), lp().apply { marginStart = ctx.pp(2.5f) })
         area.addView(r1)
 
         val r2 = ctx.hbox()
-        r2.addView(ctx.label("End on:", bold = true).apply { minWidth = ctx.dp(80); gravity = Gravity.END })
+        r2.addView(ctx.label("End on:", bold = true).apply { minWidth = ctx.pp(32); gravity = Gravity.END })
         val endText = if (ev.repeatEnd < 0) "No End Date" else Fmt.dowDate(ev.repeatEnd)
         r2.addView(ctx.popupTrigger(endText) { tv ->
             ctx.popupList(tv, listOf("No End Date", "Choose Date..."), if (ev.repeatEnd < 0) 0 else 1) { i ->
@@ -282,11 +282,11 @@ class RepeatDialog(
                     ev.repeatEnd = maxOf(d, ev.date); buildArea()
                 }.show()
             }
-        }, lp().apply { marginStart = ctx.dp(8) })
-        area.addView(r2, lp().apply { topMargin = ctx.dp(8) })
+        }, lp().apply { marginStart = ctx.pp(3) })
+        area.addView(r2, lp().apply { topMargin = ctx.pp(3) })
 
         if (ev.repeat == Repeat.WEEK) {
-            area.addView(ctx.label("Repeat on:", bold = true), lp().apply { topMargin = ctx.dp(10) })
+            area.addView(ctx.label("Repeat on:", bold = true), lp().apply { topMargin = ctx.pp(4) })
             val g = PushGroup(ctx, Fmt.dowLetter.toList(), -1, multi = true) { g ->
                 var mask = 0
                 for (i in 0..6) if (g.on[i]) mask = mask or (1 shl i)
@@ -295,16 +295,16 @@ class RepeatDialog(
             }
             for (i in 0..6) g.on[i] = (ev.weekDays and (1 shl i)) != 0
             g.refresh()
-            area.addView(g.view, lp(MATCH).apply { topMargin = ctx.dp(4) })
+            area.addView(g.view, lp(MATCH).apply { topMargin = ctx.pp(1.5f) })
         }
         if (ev.repeat == Repeat.MONTH_DAY || ev.repeat == Repeat.MONTH_DATE) {
             val r3 = ctx.hbox()
-            r3.addView(ctx.label("Repeat by:", bold = true).apply { minWidth = ctx.dp(80); gravity = Gravity.END })
+            r3.addView(ctx.label("Repeat by:", bold = true).apply { minWidth = ctx.pp(32); gravity = Gravity.END })
             val g = PushGroup(ctx, listOf("Day", "Date"), if (ev.repeat == Repeat.MONTH_DAY) 0 else 1) { g ->
                 ev.repeat = if (g.selected == 0) Repeat.MONTH_DAY else Repeat.MONTH_DATE; updateSummary()
             }
-            r3.addView(g.view, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginStart = ctx.dp(8) })
-            area.addView(r3, lp(MATCH).apply { topMargin = ctx.dp(10) })
+            r3.addView(g.view, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginStart = ctx.pp(3) })
+            area.addView(r3, lp(MATCH).apply { topMargin = ctx.pp(4) })
         }
         updateSummary()
     }

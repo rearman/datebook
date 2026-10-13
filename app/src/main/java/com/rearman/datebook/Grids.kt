@@ -34,17 +34,17 @@ class WeekGrid(
     private val weekStart: Long,
     private val onSelect: (Occ?) -> Unit
 ) : View(ctx) {
-    private val hourH = ctx.dp(34).toFloat()
-    private val gutter = ctx.dp(28).toFloat()
-    private val ink = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palm.INK; strokeWidth = ctx.dp(1.2f).toFloat() }
+    private val hourH = ctx.ppf(11f)
+    private val gutter = ctx.ppf(12f)
+    private val ink = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palm.INK; strokeWidth = ctx.ppf(1f) }
     private val thin = Paint().apply { color = Palm.LIGHT; strokeWidth = 1f }
     private val fill = Paint().apply { color = Palm.GRAY }
     private val shade = Paint().apply { color = 0x14000000 }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; textSize = ctx.dp(10).toFloat(); typeface = Typeface.DEFAULT_BOLD
+        color = Palm.INK; textSize = ctx.ppf(7f); typeface = Typeface.DEFAULT_BOLD
     }
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; style = Paint.Style.STROKE; strokeWidth = ctx.dp(1.2f).toFloat()
+        color = Palm.INK; style = Paint.Style.STROKE; strokeWidth = ctx.ppf(1f)
     }
     private val days = (0..6).map { weekStart + it }
     private val timed = days.map { d -> act.dayOccs(d).filter { !it.event.untimed } }
@@ -91,7 +91,7 @@ class WeekGrid(
             c.drawLine(gutter, y, width.toFloat(), y, thin)
             if (h < 24) {
                 val lbl = if (Fmt.h24) "$h" else (if (h % 12 == 0) "12" else "${h % 12}")
-                c.drawText(lbl, ctx2dp(3f), y + text.textSize + 2, text)
+                c.drawText(lbl, context.ppf(1f), y + text.textSize + 2, text)
             }
         }
         for (i in 0..7) {
@@ -101,11 +101,11 @@ class WeekGrid(
         boxes.clear()
         for (i in 0..6) {
             val (laneOf, nLanes) = laneInfo[i]
-            val lw = (cw - ctx2dp(4f)) / nLanes
+            val lw = (cw - context.ppf(2f)) / nLanes
             for (o in timed[i]) {
                 val e = o.event
                 val lane = laneOf[o] ?: 0
-                val l = gutter + i * cw + ctx2dp(2f) + lane * lw
+                val l = gutter + i * cw + context.ppf(1f) + lane * lw
                 val top = e.start / 60f * hourH
                 val bot = maxOf(e.end, e.start + 15) / 60f * hourH
                 val r = RectF(l, top + 1, l + lw - 1, bot - 1)
@@ -120,8 +120,6 @@ class WeekGrid(
             }
         }
     }
-
-    private fun ctx2dp(v: Float) = context.dp(v).toFloat()
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean = gd.onTouchEvent(event) || super.onTouchEvent(event)
@@ -138,24 +136,24 @@ class MonthGrid(
     private val first = LocalDate.of(year, month, 1)
     private val lead = Recur.dow(first)
     private val len = first.lengthOfMonth()
-    private val headH = ctx.dp(22).toFloat()
-    private val line = Paint().apply { color = Palm.INK; strokeWidth = ctx.dp(1f).toFloat() }
+    private val headH = ctx.ppf(11f)
+    private val line = Paint().apply { color = Palm.INK; strokeWidth = ctx.ppf(1f) }
     private val thick = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; style = Paint.Style.STROKE; strokeWidth = ctx.dp(2.5f).toFloat()
+        color = Palm.INK; style = Paint.Style.STROKE; strokeWidth = ctx.ppf(1.5f)
     }
     private val fill = Paint().apply { color = Palm.INK }
     private val num = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; textSize = ctx.dp(Palm.textSp - 1).toFloat(); typeface = Typeface.DEFAULT_BOLD
+        color = Palm.INK; textSize = ctx.ppf(Palm.text - 1); typeface = Typeface.DEFAULT_BOLD
     }
     private val head = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; textSize = ctx.dp(12).toFloat(); typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.CENTER
+        color = Palm.INK; textSize = ctx.ppf(Palm.text - 1); typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.CENTER
     }
     private val dash = Paint().apply {
-        color = Palm.INK; strokeWidth = ctx.dp(2f).toFloat(); style = Paint.Style.STROKE
-        pathEffect = DashPathEffect(floatArrayOf(ctx.dp(3).toFloat(), ctx.dp(3).toFloat()), 0f)
+        color = Palm.INK; strokeWidth = ctx.ppf(1f); style = Paint.Style.STROKE
+        pathEffect = DashPathEffect(floatArrayOf(ctx.ppf(1.5f), ctx.ppf(1.5f)), 0f)
     }
     private val small = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Palm.INK; textSize = ctx.dp(9).toFloat()
+        color = Palm.INK; textSize = ctx.ppf(6f)
     }
 
     private val gd = GestureDetector(ctx, object : GestureDetector.SimpleOnGestureListener() {
@@ -172,11 +170,14 @@ class MonthGrid(
 
     private fun cellH() = (height - headH) / 6f
 
+    // Palm month grid: an 11 px head and six 20 px weeks.
+    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(MeasureSpec.getSize(w), (headH + 6 * context.ppf(20f)).toInt())
+
     override fun onDraw(c: Canvas) {
         c.drawColor(Palm.paper)
         val cw = width / 7f
         val ch = cellH()
-        for (i in 0..6) c.drawText(Fmt.dowLetter[i], cw * i + cw / 2, headH - ctx(6f), head)
+        for (i in 0..6) c.drawText(Fmt.dowLetter[i], cw * i + cw / 2, headH - ctx(2.5f), head)
         for (r in 0..6) c.drawLine(0f, headH + r * ch, width.toFloat(), headH + r * ch, line)
         for (i in 0..7) c.drawLine(minOf(i * cw, width - 1f), headH, minOf(i * cw, width - 1f), height.toFloat(), line)
         val today = LocalDate.now().toEpochDay()
@@ -191,12 +192,12 @@ class MonthGrid(
             val label = n.toString()
             if (ep == today) {
                 val w = num.measureText(label)
-                c.drawRect(x + ctx(2f), y + ctx(2f), x + w + ctx(7f), y + num.textSize + ctx(5f), fill)
+                c.drawRect(x + ctx(1f), y + ctx(1f), x + w + ctx(3f), y + num.textSize + ctx(2f), fill)
                 num.color = Palm.paper
-                c.drawText(label, x + ctx(4.5f), y + num.textSize + ctx(2f), num)
+                c.drawText(label, x + ctx(1.5f), y + num.textSize + ctx(1f), num)
                 num.color = Palm.INK
-            } else c.drawText(label, x + ctx(4.5f), y + num.textSize + ctx(2f), num)
-            if (ep == act.day) c.drawRect(x + ctx(1.5f), y + ctx(1.5f), x + cw - ctx(1.5f), y + ch - ctx(1.5f), thick)
+            } else c.drawText(label, x + ctx(1.5f), y + num.textSize + ctx(1f), num)
+            if (ep == act.day) c.drawRect(x + ctx(0.75f), y + ctx(0.75f), x + cw - ctx(0.75f), y + ch - ctx(0.75f), thick)
 
             val occs = act.dayOccs(ep)
             var daily = false
@@ -210,23 +211,23 @@ class MonthGrid(
                 if (e.untimed) { if (p.monthUntimed) untimed = true }
                 else if (p.monthTimed) bands[when { e.start < 12 * 60 -> 0; e.start < 18 * 60 -> 1; else -> 2 }] = true
             }
-            val top = y + num.textSize + ctx(6f)
-            val avail = y + ch - ctx(6f) - top
+            val top = y + num.textSize + ctx(2.5f)
+            val avail = y + ch - ctx(2.5f) - top
             for (b in 0..2) if (bands[b]) {
                 val by = top + avail * b / 3f
-                c.drawRect(x + cw - ctx(9f), by, x + cw - ctx(4f), by + minOf(ctx(5f), avail / 3f), fill)
+                c.drawRect(x + cw - ctx(4f), by, x + cw - ctx(1.5f), by + minOf(ctx(2f), avail / 3f), fill)
             }
             if (untimed) {
-                val cx = x + ctx(8f); val cy = y + ch - ctx(9f); val s = ctx(4f)
+                val cx = x + ctx(3.5f); val cy = y + ch - ctx(4f); val s = ctx(1.5f)
                 c.drawLine(cx - s, cy, cx + s, cy, line)
                 c.drawLine(cx, cy - s, cx, cy + s, line)
             }
-            if (daily) c.drawLine(x + ctx(3f), y + ch - ctx(3f), x + cw - ctx(3f), y + ch - ctx(3f), dash)
-            if (count > 1 && ch > ctx(56f)) c.drawText("$count", x + ctx(15f), y + ch - ctx(6f), small)
+            if (daily) c.drawLine(x + ctx(1f), y + ch - ctx(1f), x + cw - ctx(1f), y + ch - ctx(1f), dash)
+            if (count > 1 && ch > ctx(22f)) c.drawText("$count", x + ctx(6f), y + ch - ctx(2.5f), small)
         }
     }
 
-    private fun ctx(v: Float) = context.dp(v).toFloat()
+    private fun ctx(v: Float) = context.ppf(v)
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean = gd.onTouchEvent(event) || super.onTouchEvent(event)
@@ -234,20 +235,20 @@ class MonthGrid(
 
 /**
  * The icons in the bottom row: the four views (0 to 3), then Menu (4) and Find (5).
- * Each is a 40 dp square that draws a box inside a 4 dp margin.
+ * Each icon is a 13 Palm px square that draws an 11 px box inside a 1 px margin.
  */
 @SuppressLint("ViewConstructor")
 class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean, onClick: () -> Unit) : View(ctx) {
-    private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = ctx.dp(1.3f).toFloat() }
+    private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = ctx.ppf(1f) }
 
     init { setOnClickListener { onClick() }; contentDescription = listOf("Day", "Week", "Month", "Agenda", "Menu", "Find")[kind] }
 
-    override fun onMeasure(w: Int, h: Int) { val s = context.dp(40); setMeasuredDimension(s, s) }
+    override fun onMeasure(w: Int, h: Int) { val s = context.pp(13); setMeasuredDimension(s, s) }
 
     override fun onDraw(c: Canvas) {
         val w = width.toFloat()
         val h = height.toFloat()
-        val m = context.dp(4).toFloat()
+        val m = context.ppf(1f)
         p.style = Paint.Style.FILL
         p.color = if (active) Palm.INK else Palm.paper
         c.drawRect(m, m, w - m, h - m, p)
@@ -255,8 +256,9 @@ class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean,
         p.color = Palm.INK
         c.drawRect(m, m, w - m, h - m, p)
         p.color = if (active) Palm.paper else Palm.INK
-        val l = m + 3; val r = w - m - 3; val t = m + 3; val b = h - m - 3
-        val dr = context.dp(1.6f).toFloat()
+        val g = context.ppf(1f)
+        val l = m + g; val r = w - m - g; val t = m + g; val b = h - m - g
+        val dr = context.ppf(0.8f)
         fun dot(x: Float, y: Float) { p.style = Paint.Style.FILL; c.drawCircle(x, y, dr, p) }
         when (kind) {
             0 -> dot(w / 2, h / 2) // Day: one dot in the center

@@ -36,6 +36,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - **Menu** (the three-line icon at the bottom right, or a tap on the title tab) opens the Record, Edit and Options menus.
 - **Find** (the magnifier icon at the bottom right) searches the descriptions and notes of all records.
 - Font, Security (show, mask or hide private records), Purge, and a Green LCD screen option.
+- All screens use the proportions of the Palm IIIxe: the screen width is 160 Palm pixels, and the Font option selects the Palm small, standard or large font size.
 - Export Backup and Import Backup save and load all records as a JSON file.
 
 ## Limits
