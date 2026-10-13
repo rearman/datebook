@@ -534,7 +534,7 @@ open class MainActivity : Activity() {
             }
             r.addView(vbox().apply {
                 addView(slot, lp(MATCH))
-                addView(DottedLine(this@MainActivity, Palm.GRAY), LP(MATCH, pp(1)))
+                addView(DottedLine(this@MainActivity, Palm.INK), LP(MATCH, pp(1)))
             }, LP(0, WRAP, 1f))
             col.addView(r, lp(MATCH))
         }
