@@ -760,9 +760,11 @@ open class MainActivity : Activity() {
         }
 
         col.addView(View(this).apply { setBackgroundColor(Palm.INK) },
-            LP(MATCH, pp(1)).apply { topMargin = pp(4); bottomMargin = pp(1.5f) })
+            LP(resources.displayMetrics.widthPixels / 3, pp(1)).apply {
+                topMargin = pp(4); bottomMargin = pp(1.5f); gravity = Gravity.CENTER_HORIZONTAL
+            })
         val th = hbox()
-        th.addView(label("To Do", bold = true), LP(0, WRAP, 1f))
+        th.addView(View(this), LP(0, 1, 1f))
         th.addView(popupTrigger(categoryLabel(prefs.todoCategory)) { tv ->
             pickCategory(tv, prefs.todoCategory, includeAll = true) { id -> prefs.todoCategory = id; render() }
         })
