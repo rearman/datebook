@@ -564,7 +564,8 @@ open class MainActivity : Activity() {
         cmd(cmds, "Go to") { endEdit(); DateDialog(this, "Go to Date", day) { d -> day = d; selected = null; render() }.show() }
     }
 
-    private fun rowEdit(text: String): EditText = EditText(this).apply {
+    /** A row text field. With [multiLine], Enter adds a new line (To Do items); without it, Enter ends the edit. */
+    private fun rowEdit(text: String, multiLine: Boolean = false): EditText = EditText(this).apply {
         setText(text)
         background = null
         setTextColor(Palm.INK)
@@ -573,12 +574,16 @@ open class MainActivity : Activity() {
         minHeight = 0
         minimumHeight = 0
         setPadding(pp(1), 0, pp(1), 0)
-        inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
         setHorizontallyScrolling(false)
         maxLines = 20
-        imeOptions = EditorInfo.IME_ACTION_DONE
-        setOnEditorActionListener { _, id, _ ->
-            if (id == EditorInfo.IME_ACTION_DONE) { endEdit(); true } else false
+        if (multiLine) {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        } else {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            imeOptions = EditorInfo.IME_ACTION_DONE
+            setOnEditorActionListener { _, id, _ ->
+                if (id == EditorInfo.IME_ACTION_DONE) { endEdit(); true } else false
+            }
         }
     }
 
@@ -833,7 +838,9 @@ open class MainActivity : Activity() {
             val d = Fmt.ld(t.due); "${d.monthValue}/${d.dayOfMonth}" + if (late) "!" else ""
         }
         return label(txt, bold = late).apply {
-            gravity = Gravity.END
+            gravity = Gravity.START
+            // A fixed-width column, so all dates start at the same x.
+            minWidth = label("", bold = true).paint.measureText("00/00!").toInt() + pp(3)
             maxLines = 1
             setPadding(pp(2), 0, pp(1), 0)
             setOnClickListener { tv -> endEdit(); pickDue(tv, t.due) { d -> t.due = d; saveTodo(t) } }
@@ -892,7 +899,8 @@ open class MainActivity : Activity() {
                     setOnClickListener { revealAsk(t) }
                 }, LP(0, pp(7), 1f).apply { topMargin = pp(2); marginEnd = pp(3) })
             } else {
-                val ed = rowEdit(t.title)
+                val ed = rowEdit(t.title, multiLine = true)
+                ed.background = LinedBackground(this, ed)
                 val key = "t${t.id}"
                 ed.tag = key
                 ed.setOnFocusChangeListener { _, has ->
@@ -905,7 +913,6 @@ open class MainActivity : Activity() {
             if (prefs.showDueDates) r.addView(todoDueLabel(t, today))
             if (prefs.showCategories) r.addView(todoCategoryLabel(t))
             col.addView(r, lp(MATCH))
-            col.addView(DottedLine(this), LP(MATCH, pp(1)))
         }
         content.addView(ScrollView(this).apply { addView(col); isFillViewport = true })
         focusView?.let { f -> f.post { f.requestFocus(); f.setSelection(f.text.length) } }
@@ -1125,18 +1132,10 @@ open class MainActivity : Activity() {
     }
 }
 
-/** The thin dotted line under each Day view and To Do line. */
-class DottedLine(ctx: Context, color: Int = Palm.LIGHT) : View(ctx) {
-    private val p = Paint().apply {
-        this.color = color; strokeWidth = ctx.ppf(1f)
-        pathEffect = android.graphics.DashPathEffect(floatArrayOf(ctx.ppf(1f), ctx.ppf(1f)), 0f)
-    }
-    override fun onDraw(c: Canvas) { c.drawLine(0f, height / 2f, width.toFloat(), height / 2f, p) }
-}
-
 /**
- * Palm dotted underlines for a Day view row: one under each text line of [ed], across the
- * full row. With no editor (a masked record), one line at the bottom of the row.
+ * Palm dotted underlines: one under each text line of [ed]. As the background of a row it
+ * spans the row; as the background of [ed] itself it spans the field. With no editor (a
+ * masked record), one line at the bottom.
  */
 class LinedBackground(ctx: Context, private val ed: TextView?) : Drawable() {
     private val p = Paint().apply {
@@ -1152,8 +1151,9 @@ class LinedBackground(ctx: Context, private val ed: TextView?) : Drawable() {
             c.drawLine(b.left.toFloat(), b.bottom - h, b.right.toFloat(), b.bottom - h, p)
             return
         }
+        val off = if (ed.background === this) 0 else ed.top
         for (i in 0 until layout.lineCount) {
-            val y = b.top + ed.top + ed.paddingTop + layout.getLineBottom(i) - h
+            val y = b.top + off + ed.paddingTop + layout.getLineBottom(i) - h
             c.drawLine(b.left.toFloat(), y, b.right.toFloat(), y, p)
         }
     }
