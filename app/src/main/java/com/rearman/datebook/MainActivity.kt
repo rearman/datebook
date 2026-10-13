@@ -755,6 +755,7 @@ open class MainActivity : Activity() {
 
         val occs = dayOccs(day)
         if (occs.isEmpty()) col.addView(label("No Appointments Today", size = Palm.text).apply {
+            gravity = Gravity.CENTER_HORIZONTAL
             setPadding(0, pp(2.5f), 0, pp(2.5f))
         })
         val timeW = timeColW(pp(3), pp(19))
@@ -794,6 +795,9 @@ open class MainActivity : Activity() {
                 background = box(Palm.LIGHT, Palm.LIGHT, 0f, 1f); setOnClickListener { revealAsk(t) }
             }, LP(0, pp(7), 1f).apply { topMargin = pp(2); marginEnd = pp(3) })
             else r.addView(label(t.title.ifBlank { "(no description)" }).apply {
+                // Only the first line, with an ellipsis when the text is cut.
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
                 setPadding(pp(1), 0, pp(1), 0)
                 setOnClickListener { openTodoApp(t.id) }
             }, LP(0, WRAP, 1f))
