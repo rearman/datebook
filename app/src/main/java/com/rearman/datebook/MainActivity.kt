@@ -460,9 +460,12 @@ open class MainActivity : Activity() {
         rows.forEachIndexed { idx, row ->
             val rowEnd = rows.drop(idx + 1).firstOrNull { !it.untimed }?.min
                 ?: maxOf(row.min + 60, row.occ?.event?.end ?: 0)
+            val free = row.occ == null && !row.untimed
+            val nextFree = rows.getOrNull(idx + 1)?.let { it.occ == null && !it.untimed && it.min == rowEnd } == true
             val r = hbox(Gravity.TOP)
             if (barW > 0) {
-                r.addView(TimeBar(this, if (row.untimed) emptyList() else timed, laneOf, row.min, rowEnd),
+                r.addView(TimeBar(this, if (row.untimed) emptyList() else timed, laneOf, row.min, rowEnd,
+                    free, nextFree),
                     LP(barW, MATCH))
             }
             val occ = row.occ
@@ -1080,14 +1083,20 @@ class DottedLine(ctx: Context) : View(ctx) {
     override fun onDraw(c: Canvas) { c.drawLine(0f, height / 2f, width.toFloat(), height / 2f, p) }
 }
 
-/** Day view time bars: one lane per overlapping event, with ticks at start and end. */
+/**
+ * Day view time bars: one lane per overlapping event, with ticks at start and end.
+ * When an empty line starts at an event's end ([nextFree] in the row above, [free] in
+ * that line), the bar runs down to the empty line's time and puts its end tick there.
+ */
 @SuppressLint("ViewConstructor")
 class TimeBar(
     ctx: Context,
     private val timed: List<Occ>,
     private val laneOf: Map<Occ, Int>,
     private val rs: Int,
-    private val re: Int
+    private val re: Int,
+    private val free: Boolean,
+    private val nextFree: Boolean
 ) : View(ctx) {
     private val p = Paint().apply { color = Palm.INK; strokeWidth = ctx.dp(1.6f).toFloat() }
 
@@ -1098,10 +1107,16 @@ class TimeBar(
         for (o in timed) {
             val e = o.event
             val end = maxOf(e.end, e.start + 1)
-            if (!(e.start < re && end > rs)) continue
             val x = x0 + (laneOf[o] ?: 0) * lw
+            if (free && end == rs && e.start < rs) {
+                val y = context.dp(10).toFloat()
+                c.drawLine(x, 0f, x, y, p)
+                c.drawLine(x, y, x + tick, y, p)
+                continue
+            }
+            if (!(e.start < re && end > rs)) continue
             val startsHere = e.start >= rs && e.start < re
-            val endsHere = end > rs && end <= re
+            val endsHere = end > rs && (end < re || (end == re && !nextFree))
             val top = if (startsHere) context.dp(10).toFloat() else 0f
             val bot = if (endsHere) height - context.dp(10).toFloat() else height.toFloat()
             c.drawLine(x, top, x, maxOf(top, bot), p)
