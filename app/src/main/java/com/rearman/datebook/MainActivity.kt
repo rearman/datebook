@@ -668,7 +668,7 @@ open class MainActivity : Activity() {
             if (o != null) showEventBox(o)
         }
         // Lines up with the grid: its hour label column on the left, its 3 px margin on the right.
-        val head = hbox().apply { setPadding(grid.gutter.toInt(), 0, pp(3), 0) }
+        val head = hbox(Gravity.TOP).apply { setPadding(grid.gutter.toInt(), 0, pp(3), 0) }
         for (i in 0..6) {
             val d = ws + i
             val untimed = dayOccs(d).count { it.event.untimed }
@@ -680,7 +680,8 @@ open class MainActivity : Activity() {
             val fg = if (d == today) Palm.paper else Palm.INK
             cell.addView(label(Fmt.dowLetter[i], bold = true, size = Palm.text).apply { setTextColor(fg); gravity = Gravity.CENTER })
             cell.addView(label(Fmt.ld(d).dayOfMonth.toString(), bold = true).apply { setTextColor(fg); gravity = Gravity.CENTER })
-            cell.addView(label("◆".repeat(minOf(untimed, 3)), size = 4f).apply { setTextColor(fg); gravity = Gravity.CENTER })
+            // Untimed events: Palm font dots, so every cell has the same height.
+            cell.addView(label("•".repeat(minOf(untimed, 3)), size = Palm.text / 2).apply { setTextColor(fg); gravity = Gravity.CENTER })
             head.addView(cell, LP(0, WRAP, 1f))
         }
         col.addView(head, lp(MATCH))
