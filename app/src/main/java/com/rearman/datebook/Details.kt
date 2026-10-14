@@ -29,11 +29,11 @@ class EventDetails(
             TimeDialog(act, work.untimed, work.start, work.end) { u, s, e ->
                 work.untimed = u; work.start = s; work.end = e; tv.text = Fmt.range(work)
             }.show()
-        }, 56, 18, 87, 11)
+        }.apply { maxWidth = act.pp(156 - 56 - 4) }, 56, 18, WRAP, 11)
         act.rightLabel(area, "Date:", 51, 34)
         act.placeForm(area, act.selector(Fmt.dowDate(work.date)) { tv ->
             DateDialog(act, "Set Date", work.date) { d -> work.date = d; tv.text = Fmt.dowDate(d) }.show()
-        }, 56, 34, 109, 11)
+        }.apply { maxWidth = act.pp(156 - 56 - 4) }, 56, 34, WRAP, 11)
 
         // The alarm field and unit stay in place when the check box is off. They are disabled.
         act.rightLabel(area, "Alarm:", 51, 50)
