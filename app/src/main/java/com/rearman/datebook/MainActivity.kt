@@ -929,13 +929,20 @@ open class MainActivity : Activity() {
             col.addView(r, LP(MATCH, pp(11)).apply { marginEnd = pp(7) })
         }
 
-        // The To Do divider band: 13 px at y 86, with the category trigger at x 143 (17 px wide).
-        val th = hbox()
-        th.addView(View(this), LP(0, 1, 1f))
+        // The To Do divider band: a short centered rule, then the category trigger at the right.
+        // The trigger shows the name of the active category.
+        val th = vbox()
+        th.addView(View(this).apply { setBackgroundColor(Palm.INK) },
+            LP(pp(53), pp(1)).apply {
+                topMargin = pp(4); bottomMargin = pp(1.5f); gravity = Gravity.CENTER_HORIZONTAL
+            })
+        val triggerRow = hbox()
+        triggerRow.addView(View(this), LP(0, 1, 1f))
         val trigger = popupTrigger(categoryLabel(prefs.todoCategory)) { tv ->
             pickCategory(tv, prefs.todoCategory, includeAll = true) { id -> prefs.todoCategory = id; render() }
         }.apply { setPadding(pp(1), 0, pp(1), 0) }
-        th.addView(trigger, LP(pp(17), pp(11)).apply { topMargin = pp(1) })
+        triggerRow.addView(trigger, LP(WRAP, pp(13)))
+        th.addView(triggerRow, lp(MATCH))
         val todoCol = vbox()
         val tds = agendaTodos()
         if (tds.isEmpty()) todoCol.addView(label("No open items",size = Palm.text).apply {
@@ -961,14 +968,14 @@ open class MainActivity : Activity() {
             if (prefs.showCategories) r.addView(todoCategoryLabel(t), lp().apply { topMargin = textTop })
             todoCol.addView(r, lp(MATCH).apply { marginEnd = pp(7) })
         }
-        // Palm 2200: the appointment area fits its rows, up to 68 px (y 18 to 86), then the divider band (13 px),
+        // Palm 2200: the appointment area fits its rows, up to 68 px (y 18 to 86), then the divider band,
         // then the To Do list. The 7 px at the right are the scroll bar gap.
         val apptH = if (occs.isEmpty()) pp(16) else minOf(pp(68), occs.size * pp(11))
         val apptScroll = ScrollView(this).apply { addView(col); isVerticalScrollBarEnabled = false }
         val todoScroll = ScrollView(this).apply { addView(todoCol); isVerticalScrollBarEnabled = false }
         val page = vbox()
         page.addView(apptScroll, LP(MATCH, apptH))
-        page.addView(th, LP(MATCH, pp(13)))
+        page.addView(th, lp(MATCH))
         page.addView(todoScroll, LP(MATCH, 0, 1f))
         content.addView(page, LP(MATCH, MATCH))
         viewIcons(cmds)
