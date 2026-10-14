@@ -944,7 +944,7 @@ open class MainActivity : Activity() {
             setPadding(0, pp(2.5f), 0, pp(2.5f))
         })
         for (t in tds) {
-            val r = hbox(Gravity.TOP)
+            val r = hbox(Gravity.TOP).apply { isBaselineAligned = false }
             r.addView(checkBox("", t.done) { b -> completeTodo(t, b) }, lp().apply { topMargin = pp(1) })
             if (prefs.showPriorities) r.addView(todoPriorityLabel(t))
             if (isMasked(t)) r.addView(label("").apply {
@@ -961,12 +961,13 @@ open class MainActivity : Activity() {
             if (prefs.showCategories) r.addView(todoCategoryLabel(t))
             todoCol.addView(r, lp(MATCH).apply { marginEnd = pp(7) })
         }
-        // Palm 2200: appointments in 68 px (y 18 to 86), the divider band (13 px), then the To Do list.
-        // The 7 px at the right are the scroll bar gap.
+        // Palm 2200: the appointment area fits its rows, up to 68 px (y 18 to 86), then the divider band (13 px),
+        // then the To Do list. The 7 px at the right are the scroll bar gap.
+        val apptH = if (occs.isEmpty()) pp(16) else minOf(pp(68), occs.size * pp(11))
         val apptScroll = ScrollView(this).apply { addView(col); isVerticalScrollBarEnabled = false }
         val todoScroll = ScrollView(this).apply { addView(todoCol); isVerticalScrollBarEnabled = false }
         val page = vbox()
-        page.addView(apptScroll, LP(MATCH, pp(68)))
+        page.addView(apptScroll, LP(MATCH, apptH))
         page.addView(th, LP(MATCH, pp(13)))
         page.addView(todoScroll, LP(MATCH, 0, 1f))
         content.addView(page, LP(MATCH, MATCH))
