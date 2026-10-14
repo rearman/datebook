@@ -942,22 +942,24 @@ open class MainActivity : Activity() {
         if (tds.isEmpty()) todoCol.addView(label("No open items",size = Palm.text).apply {
             setPadding(0, pp(2.5f), 0, pp(2.5f))
         })
+        // The check box is 14 px high with a 1 px top margin. This puts each text line level with the middle of the box.
+        val textTop = pp(1) + (pp(14) - label("").lineHeight) / 2
         for (t in tds) {
             val r = hbox(Gravity.TOP).apply { isBaselineAligned = false }
             r.addView(checkBox("", t.done) { b -> completeTodo(t, b) }, lp().apply { topMargin = pp(1) })
-            if (prefs.showPriorities) r.addView(todoPriorityLabel(t))
+            if (prefs.showPriorities) r.addView(todoPriorityLabel(t), lp().apply { topMargin = textTop })
             if (isMasked(t)) r.addView(label("").apply {
                 background = box(Palm.LIGHT, Palm.LIGHT, 0f, 1f); setOnClickListener { revealAsk(t) }
-            }, LP(0, pp(7), 1f).apply { topMargin = pp(2); marginEnd = pp(3) })
+            }, LP(0, pp(7), 1f).apply { topMargin = textTop + pp(2); marginEnd = pp(3) })
             else r.addView(label(t.title.ifBlank { "(no description)" }).apply {
                 // Only the first line, with an ellipsis when the text is cut.
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
                 setPadding(pp(1), 0, pp(1), 0)
                 setOnClickListener { openTodoApp(t.id) }
-            }, LP(0, WRAP, 1f))
-            if (prefs.showDueDates) r.addView(todoDueLabel(t, day))
-            if (prefs.showCategories) r.addView(todoCategoryLabel(t))
+            }, LP(0, WRAP, 1f).apply { topMargin = textTop })
+            if (prefs.showDueDates) r.addView(todoDueLabel(t, day), lp().apply { topMargin = textTop })
+            if (prefs.showCategories) r.addView(todoCategoryLabel(t), lp().apply { topMargin = textTop })
             todoCol.addView(r, lp(MATCH).apply { marginEnd = pp(7) })
         }
         // Palm 2200: the appointment area fits its rows, up to 68 px (y 18 to 86), then the divider band (13 px),
@@ -1073,18 +1075,20 @@ open class MainActivity : Activity() {
         if (items.isEmpty()) col.addView(label("No items. Tap New to add one.").apply {
             setTextColor(Palm.GRAY); setPadding(pp(5), pp(6.5f), pp(5), pp(6.5f))
         })
+        // The check box is 14 px high with a 1 px top margin. This puts each text line level with the middle of the box.
+        val textTop = pp(1) + (pp(14) - label("").lineHeight) / 2
         for (t in items) {
             val r = hbox(Gravity.TOP)
             // Baseline alignment lets the 14 px check box, with its lower baseline, push a wrapped
             // EditText down inside a row measured too short. Top alignment keeps every child at the top edge.
             r.isBaselineAligned = false
             r.addView(checkBox("", t.done) { b -> endEdit(); completeTodo(t, b) }, lp().apply { topMargin = pp(1); marginStart = pp(2) })
-            if (prefs.showPriorities) r.addView(todoPriorityLabel(t))
+            if (prefs.showPriorities) r.addView(todoPriorityLabel(t), lp().apply { topMargin = textTop })
             if (isMasked(t)) {
                 r.addView(label("").apply {
                     background = box(Palm.LIGHT, Palm.LIGHT, 0f, 1f)
                     setOnClickListener { revealAsk(t) }
-                }, LP(0, pp(7), 1f).apply { topMargin = pp(2); marginEnd = pp(3) })
+                }, LP(0, pp(7), 1f).apply { topMargin = textTop + pp(2); marginEnd = pp(3) })
             } else {
                 val ed = rowEdit(t.title, multiLine = true)
                 ed.background = LinedBackground(this, ed)
@@ -1095,10 +1099,10 @@ open class MainActivity : Activity() {
                     else commitTodo(t, ed.text.toString())
                 }
                 if (key == focusKey) focusView = ed
-                r.addView(ed, LP(0, WRAP, 1f))
+                r.addView(ed, LP(0, WRAP, 1f).apply { topMargin = textTop })
             }
-            if (prefs.showDueDates) r.addView(todoDueLabel(t, today))
-            if (prefs.showCategories) r.addView(todoCategoryLabel(t))
+            if (prefs.showDueDates) r.addView(todoDueLabel(t, today), lp().apply { topMargin = textTop })
+            if (prefs.showCategories) r.addView(todoCategoryLabel(t), lp().apply { topMargin = textTop })
             col.addView(r, lp(MATCH))
         }
         content.addView(ScrollView(this).apply { addView(col); isFillViewport = true; isVerticalScrollBarEnabled = false })
