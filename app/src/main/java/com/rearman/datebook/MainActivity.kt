@@ -1075,6 +1075,9 @@ open class MainActivity : Activity() {
         })
         for (t in items) {
             val r = hbox(Gravity.TOP)
+            // Baseline alignment lets the 14 px check box, with its lower baseline, push a wrapped
+            // EditText down inside a row measured too short. Top alignment keeps every child at the top edge.
+            r.isBaselineAligned = false
             r.addView(checkBox("", t.done) { b -> endEdit(); completeTodo(t, b) }, lp().apply { topMargin = pp(1); marginStart = pp(2) })
             if (prefs.showPriorities) r.addView(todoPriorityLabel(t))
             if (isMasked(t)) {
