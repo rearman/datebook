@@ -270,7 +270,7 @@ fun MainActivity.showSecurity() {
 fun MainActivity.showAbout(todo: Boolean) {
     ask(
         if (todo) "About To Do List" else "About Date Book",
-        "Date Book and To Do List for Android\nVersion 1.0\n\nAfter the Palm OS 3.5 applications.\nYour records stay on this phone.",
+        "Date Book and To Do List for Android\nVersion 1.1\n\nAfter the Palm OS 3.5 applications.\nYour records stay on this phone.",
         "OK" to {}
     )
 }
