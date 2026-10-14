@@ -12,7 +12,7 @@ class DateDialog(
     title: String,
     initial: Long,
     private val onPick: (Long) -> Unit
-) : PalmDialog(ctx, title) {
+) : PalmDialog(ctx, title, scroll = false) {
     private var year: Int
     private var month: Int
     private val selected: Long = initial
@@ -41,8 +41,9 @@ class DateDialog(
             })
             rows.addView(row, lp(MATCH))
         }
-        add(rows)
-        add(grid, 4)
+        add(rows, 1)
+        // The day grid takes the rest of the form, so the form fits without scrolling.
+        body.addView(grid, LP(MATCH, 0, 1f).apply { topMargin = ctx.pp(2) })
         button("Cancel") { dismiss() }
         button("Today") { dismiss(); onPick(LocalDate.now().toEpochDay()) }
         draw()
@@ -69,7 +70,6 @@ class DateDialog(
                     val ep = LocalDate.of(year, month, n).toEpochDay()
                     cell = ctx.label(n.toString()).apply {
                         gravity = Gravity.CENTER
-                        setPadding(0, ctx.pp(3), 0, ctx.pp(3))
                         when {
                             ep == selected -> { background = ctx.box(Palm.INK, Palm.INK, 0f, 1f); setTextColor(Palm.paper) }
                             ep == today -> background = ctx.box(android.graphics.Color.TRANSPARENT, Palm.INK, 1f, 1f)
@@ -77,10 +77,10 @@ class DateDialog(
                         setOnClickListener { dismiss(); onPick(ep) }
                     }
                 } else cell = ctx.label("")
-                row.addView(cell, LinearLayout.LayoutParams(0, WRAP, 1f))
+                row.addView(cell, LinearLayout.LayoutParams(0, MATCH, 1f))
                 n++
             }
-            grid.addView(row, lp(MATCH))
+            grid.addView(row, LP(MATCH, 0, 1f))
         }
     }
 }
