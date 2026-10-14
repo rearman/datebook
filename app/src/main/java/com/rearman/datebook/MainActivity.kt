@@ -518,11 +518,10 @@ open class MainActivity : Activity() {
     }
 
     /**
-     * The black title tab. With [clock], it shows the current time and keeps it current.
-     * With [width] (Palm px), the tab has that exact width and no spacer follows it, so the
-     * items after it keep their Palm x. The text is cut when it is wider than the tab.
+     * The black title tab. It fits its text with 3 px padding, and a spacer follows it, so the
+     * items after it sit at the right. With [clock], it shows the current time and keeps it current.
      */
-    internal fun tab(h: LinearLayout, title: String, clock: Boolean = false, width: Int = 0) {
+    internal fun tab(h: LinearLayout, title: String, clock: Boolean = false) {
         val v = if (clock) TextClock(this).apply {
             format12Hour = "h:mm a"; format24Hour = "H:mm"
             setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text)); includeFontPadding = false; typeface = Palm.typeface(this@MainActivity, true)
@@ -536,8 +535,8 @@ open class MainActivity : Activity() {
             setPadding(pp(3), pp(1), pp(3), pp(1))
             setOnClickListener { showMenu() }
         }
-        h.addView(t, (if (width > 0) LP(pp(width), WRAP) else lp()).apply { marginStart = pp(1); gravity = Gravity.BOTTOM })
-        if (width == 0) h.addView(View(this), LP(0, 1, 1f))
+        h.addView(t, lp().apply { marginStart = pp(1); gravity = Gravity.BOTTOM })
+        h.addView(View(this), LP(0, 1, 1f))
     }
 
     private fun arrow(left: Boolean, onClick: () -> Unit): TextView =
@@ -575,10 +574,10 @@ open class MainActivity : Activity() {
     private class Row(val occ: Occ?, val min: Int, val untimed: Boolean)
 
     private fun buildDay(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
-        tab(h, Fmt.dayTitle(day), width = 57)
+        tab(h, Fmt.dayTitle(day))
         val weekStart = day - Recur.dow(Fmt.ld(day))
         h.addView(arrow(true) { day -= 7; render() }.apply { gravity = Gravity.CENTER },
-            LP(pp(12), pp(13)).apply { marginStart = pp(1) })
+            LP(pp(12), pp(13)))
         for (i in 0..6) {
             val d = weekStart + i
             h.addView(label(Fmt.dowLetter[i], bold = true).apply {
@@ -901,7 +900,7 @@ open class MainActivity : Activity() {
     }
 
     private fun buildAgenda(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
-        tab(h, "", clock = true, width = 80)
+        tab(h, "", clock = true)
         val ld = Fmt.ld(day)
         h.addView(arrow(true) { stepDate(-1) }.apply { gravity = Gravity.CENTER }, LP(pp(12), pp(13)))
         h.addView(label("${Fmt.dowShort[Recur.dow(ld)]}, ${Fmt.monthShort[ld.monthValue - 1]} ${ld.dayOfMonth}", bold = true)
