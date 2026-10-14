@@ -27,7 +27,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.view.inputmethod.BaseInputConnection
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
 import android.widget.CheckBox
 import android.widget.EditText
@@ -40,6 +42,21 @@ import android.widget.TextView
 import java.time.LocalDate
 import java.time.temporal.WeekFields
 import kotlin.math.abs
+
+/**
+ * The root view. When [editor] is true it is a text editor, so that the keyboard can stay
+ * open when no field is selected. Keys typed into it are discarded.
+ */
+private class RootBox(ctx: Context) : LinearLayout(ctx) {
+    var editor = false
+    override fun onCheckIsTextEditor() = editor
+    override fun onCreateInputConnection(out: EditorInfo): InputConnection? {
+        if (!editor) return null
+        out.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        out.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI or EditorInfo.IME_FLAG_NO_FULLSCREEN
+        return BaseInputConnection(this, false)
+    }
+}
 
 /** The Date Book app. [TodoActivity] is the To Do List app; both use the same records. */
 open class MainActivity : Activity() {
@@ -75,7 +92,7 @@ open class MainActivity : Activity() {
     /** Private records the user chose to see while records are masked ("e12", "t5"). */
     val revealed = mutableSetOf<String>()
 
-    private lateinit var root: LinearLayout
+    private lateinit var root: RootBox
     private var selected: Occ? = null
     private var selectedTodo: Todo? = null
     private var focusKey: String? = null
@@ -91,6 +108,14 @@ open class MainActivity : Activity() {
 
     private val today: Long get() = LocalDate.now().toEpochDay()
 
+    /**
+     * True on a screen taller than wide. The keyboard then stays open below the app, and
+     * adjustResize fits the screens into the area above it. A square screen shows no keyboard
+     * until a field is selected.
+     */
+    private val keepKeyboard: Boolean
+        get() = resources.displayMetrics.let { it.heightPixels > it.widthPixels * 5 / 4 }
+
     // ---------------- lifecycle ----------------
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,7 +123,11 @@ open class MainActivity : Activity() {
         store = Store.get(this)
         prefs = Prefs(this)
         mode = if (isMemoApp) MEMO else if (isTodoApp) TODO else prefs.lastView
-        root = vbox().apply { isFocusableInTouchMode = true }
+        root = RootBox(this).apply {
+            orientation = LinearLayout.VERTICAL
+            isFocusableInTouchMode = true
+            editor = keepKeyboard
+        }
         setContentView(root)
         handleIntent(intent)
         if (Build.VERSION.SDK_INT >= 33 &&
@@ -113,6 +142,12 @@ open class MainActivity : Activity() {
         super.onResume()
         render()
         Alarms.scheduleNext(this)
+    }
+
+    /** Opens the keyboard again on a tall screen when a dialog or another app closes. */
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && keepKeyboard) showKeyboard()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -351,15 +386,22 @@ open class MainActivity : Activity() {
     }
 
     internal fun hideKeyboard() {
+        if (keepKeyboard) return // On a tall screen the keyboard stays open.
         val imm = getSystemService(InputMethodManager::class.java)
         imm.hideSoftInputFromWindow(root.windowToken, 0)
+    }
+
+    /** Shows the keyboard for the selected field, or for [root] when no field is selected. */
+    private fun showKeyboard() {
+        val v = currentFocus?.takeIf { it.onCheckIsTextEditor() } ?: root.apply { requestFocus() }
+        root.post { getSystemService(InputMethodManager::class.java).showSoftInput(v, 0) }
     }
 
     /** Ends any edit in progress, so that typed text is saved. */
     internal fun endEdit() {
         focusKey = null
         root.requestFocus()
-        hideKeyboard()
+        if (keepKeyboard) showKeyboard() else hideKeyboard()
     }
 
     // ---------------- screen ----------------
@@ -399,6 +441,7 @@ open class MainActivity : Activity() {
         bottom.addView(ViewIcon(this, 5, false) { endEdit(); showFind() }, lp().apply { marginStart = -pp(1) })
         fitButtons(bottom)
         root.addView(bottom, lp(MATCH))
+        if (keepKeyboard && currentFocus?.onCheckIsTextEditor() != true) showKeyboard()
     }
 
     /**

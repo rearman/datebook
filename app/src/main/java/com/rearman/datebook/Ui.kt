@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -350,17 +351,19 @@ fun Context.popupList(anchor: View, items: List<String>, selected: Int, onPick: 
     }
     pw.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
     pw.elevation = dp(4).toFloat()
-    val maxH = resources.displayMetrics.heightPixels * 2 / 3
+    // The visible area: above the keyboard when the keyboard shows.
+    val vis = Rect().also { anchor.getWindowVisibleDisplayFrame(it) }
+    val maxH = vis.height() * 2 / 3
     sv.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
     if (sv.measuredHeight > maxH) pw.height = maxH
-    // Show at the trigger, moved left or up only as far as needed to stay on the screen.
+    // Show at the trigger, moved left or up only as far as needed to stay in the visible area.
     val loc = IntArray(2)
     anchor.getLocationOnScreen(loc)
     val dm = resources.displayMetrics
     val w = sv.measuredWidth
     val h = minOf(sv.measuredHeight, maxH)
     val x = loc[0].coerceIn(0, maxOf(0, dm.widthPixels - w))
-    val y = loc[1].coerceIn(0, maxOf(0, dm.heightPixels - h))
+    val y = loc[1].coerceIn(vis.top, maxOf(vis.top, vis.bottom - h))
     pw.showAtLocation(anchor, Gravity.NO_GRAVITY, x, y)
 }
 

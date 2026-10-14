@@ -52,6 +52,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - **Find** (the magnifier icon at the bottom right) searches the descriptions and notes of all records.
 - Font, Security (show, mask or hide private records), Purge, and a Green LCD screen option.
 - All screens use the proportions of the Palm IIIxe: the screen width is 160 Palm pixels, and the Font option selects the Palm small, standard or large font size. All text uses the Palm OS font.
+- On a screen that is taller than it is wide, the keyboard stays open below the app, and the app uses the area above the keyboard. On a square screen, the keyboard opens only when you select a line of text.
 - Export Backup and Import Backup save and load all records as a JSON file.
 
 ## Limits
