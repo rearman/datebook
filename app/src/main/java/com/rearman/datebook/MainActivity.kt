@@ -655,7 +655,9 @@ open class MainActivity : Activity() {
     }
 
     /** A row text field. With [multiLine], Enter adds a new line (To Do items); without it, Enter ends the edit. */
-    private fun rowEdit(text: String, multiLine: Boolean = false): EditText = EditText(this).apply {
+    /** A Day view or To Do line. Backspace in an empty line ends the edit, which deletes the record. */
+    private fun rowEdit(text: String, multiLine: Boolean = false): EditText = BackEdit(this).apply {
+        onEmptyBack = { endEdit() }
         setText(text)
         background = null
         setTextColor(Palm.INK)

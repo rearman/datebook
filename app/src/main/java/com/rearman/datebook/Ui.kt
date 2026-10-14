@@ -20,10 +20,14 @@ import android.text.Spanned
 import android.text.style.RelativeSizeSpan
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
+import android.view.inputmethod.InputConnectionWrapper
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.FrameLayout
@@ -330,6 +334,34 @@ open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true) : Dia
         val b = c.palmButton(text, onClick)
         buttons.addView(b, lp().apply { marginEnd = c.pp(4) })
         return b
+    }
+}
+
+/**
+ * An EditText that runs [onEmptyBack] when Backspace is pressed while the field is empty.
+ * A hardware keyboard sends a key event; a soft keyboard calls deleteSurroundingText.
+ * Limit: a held soft-keyboard Backspace cannot be told from single presses, so it also
+ * runs [onEmptyBack] when it empties the field.
+ */
+class BackEdit(ctx: Context) : EditText(ctx) {
+    var onEmptyBack: (() -> Unit)? = null
+
+    private fun emptyBack(): Boolean {
+        val f = onEmptyBack ?: return false
+        if (text.isNotEmpty()) return false
+        post(f)
+        return true
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean =
+        (keyCode == KeyEvent.KEYCODE_DEL && event.repeatCount == 0 && emptyBack()) || super.onKeyDown(keyCode, event)
+
+    override fun onCreateInputConnection(out: EditorInfo): InputConnection? {
+        val ic = super.onCreateInputConnection(out) ?: return null
+        return object : InputConnectionWrapper(ic, true) {
+            override fun deleteSurroundingText(before: Int, after: Int): Boolean =
+                (before > 0 && emptyBack()) || super.deleteSurroundingText(before, after)
+        }
     }
 }
 

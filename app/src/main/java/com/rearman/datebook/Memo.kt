@@ -111,7 +111,14 @@ internal fun MainActivity.buildMemoEdit(h: LinearLayout, content: FrameLayout, c
         }
     })
 
-    val ed = EditText(this).apply {
+    val done = {
+        endEdit()
+        if (m.text.isBlank() && m.id != 0L) store.delete(m)
+        memoOpen = null
+        render()
+    }
+    val ed = BackEdit(this).apply {
+        onEmptyBack = done // Backspace in an empty memo closes and deletes it.
         typeface = Palm.typeface(context, false)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text))
         includeFontPadding = false
@@ -141,12 +148,7 @@ internal fun MainActivity.buildMemoEdit(h: LinearLayout, content: FrameLayout, c
     ed.post { ed.requestFocus(); ed.setSelection(ed.text.length) }
     if (m.id == 0L) showKeyboardSoon()
 
-    cmd(cmds, "Done") {
-        endEdit()
-        if (m.text.isBlank() && m.id != 0L) store.delete(m)
-        memoOpen = null
-        render()
-    }
+    cmd(cmds, "Done", done)
     cmd(cmds, "Details") { showMemoDetails(m) }
     cmds.addView(View(this), LP(0, 1, 1f))
 }

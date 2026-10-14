@@ -24,6 +24,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - Repeat: daily, weekly (on selected days), monthly by day or by date, yearly, with an optional end date. For changes to a repeating event, select Current or All. For deletions, select Current, Future or All.
 - Alarms ring while the app is closed. Preferences set the alarm preset, the number of reminders and the interval. Snooze adds 5 minutes.
 - In the Day view, type a character when no event is selected to start a new event. The event starts at the next hour (today) or at the Day Start time, and the text you type is its description.
+- Press Backspace in an empty event to delete it. An event with a note or a repeat stays.
 
 ### To Do List
 
@@ -31,6 +32,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - Show options: sort order, completed items, only due items, completion date, and the columns to show.
 - Up to 15 categories.
 - Type a character when no item is selected to start a new item with that text.
+- Press Backspace in an empty item to delete it. An item with a note stays.
 
 ### Memo Pad
 
@@ -47,6 +49,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - Find searches the memos.
 - Export Backup and Import Backup include the memos.
 - In the Memo List, type a character to start a new memo with that text.
+- Press Backspace in an empty memo to delete it and go back to the Memo List.
 
 ### Both
 
