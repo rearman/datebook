@@ -259,3 +259,21 @@ object Fmt {
     fun range(e: Event): String =
         if (e.untimed) "No time" else "${time(e.start)} - ${time(e.end)}"
 }
+
+/**
+ * Splits a repeating series at [occDay] for "this & all Future". Returns the shortened original,
+ * or null when [occDay] is the first occurrence, so the original is deleted. Also returns the new
+ * series that starts at [work]. Its exceptions at or after [occDay] move with it.
+ */
+fun splitFuture(orig: Event, occDay: Long, work: Event): Pair<Event?, Event> {
+    val shortened: Event? = if (occDay <= orig.date) null else orig.deepCopy().apply {
+        repeatEnd = occDay - 1
+        exceptions.removeAll { it >= occDay }
+    }
+    val shift = work.date - occDay
+    val series = work.deepCopy().apply {
+        id = 0
+        exceptions = work.exceptions.filter { it >= occDay }.map { it + shift }.toMutableSet()
+    }
+    return shortened to series
+}

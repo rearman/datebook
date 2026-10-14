@@ -315,9 +315,9 @@ open class MainActivity : Activity() {
             store.save(work); selected = Occ(work, work.date); day = work.date
             changed(); after(Occ(work, work.date)); return
         }
-        ask(
-            "Repeating Event", "Apply the changes to the current event only, or to all occurrences?",
-            "Current" to {
+        repeatForm(
+            "Repeating Event", "Apply the changes to:\n-the Current record,\n-this & all Future records,\n-All occurrences?",
+            current = {
                 orig.exceptions.add(occDay); store.save(orig)
                 val n = work.deepCopy().apply {
                     id = 0; repeat = Repeat.NONE; repeatEnd = -1; exceptions.clear()
@@ -325,15 +325,20 @@ open class MainActivity : Activity() {
                 store.save(n); selected = Occ(n, n.date); day = n.date
                 changed(); after(Occ(n, n.date))
             },
-            "All" to {
+            future = {
+                val (short, series) = splitFuture(orig, occDay, work)
+                if (short == null) store.delete(orig) else store.save(short)
+                store.save(series); selected = Occ(series, series.date); day = series.date
+                changed(); after(Occ(series, series.date))
+            },
+            all = {
                 val m = work.deepCopy().apply {
                     id = orig.id
                     date = if (repeat == Repeat.NONE) work.date else orig.date + (work.date - occDay)
                 }
                 store.save(m); selected = Occ(m, work.date); day = work.date
                 changed(); after(Occ(m, work.date))
-            },
-            "Cancel" to {}
+            }
         )
     }
 

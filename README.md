@@ -21,7 +21,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - Agenda view: the events for one day, plus all open To Do items.
 - Swipe left for the next day, week or month. Swipe right for the previous one. In Day view, a swipe moves one day and the arrows move one week.
 - Event Details: time, date, alarm, repeat, private and note.
-- Repeat: daily, weekly (on selected days), monthly by day or by date, yearly, with an optional end date. For changes to a repeating event, select Current or All. For deletions, select Current, Future or All.
+- Repeat: daily, weekly (on selected days), monthly by day or by date, yearly, with an optional end date. For changes or deletions of a repeating event, select Current, Future or All. Future applies to this and all later occurrences. Earlier occurrences stay.
 - Alarms ring while the app is closed. Preferences set the alarm preset, the number of reminders and the interval. Snooze adds 5 minutes.
 - In the Day view, type a character when no event is selected to start a new event. The event starts at the next hour (today) or at the Day Start time, and the text you type is its description.
 - Press Backspace in an empty event to delete it. An event with a note or a repeat stays.
