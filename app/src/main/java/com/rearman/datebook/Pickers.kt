@@ -30,13 +30,13 @@ class DateDialog(
         yr.addView(ctx.palmButton("▶") { year++; draw() })
         add(yr)
         months = PushGroup(ctx, Fmt.monthShort.toList(), month - 1) { g -> month = g.selected + 1; draw() }
-        // Show the 12 month buttons in 3 rows of 4.
+        // Show the 12 month buttons in 2 rows of 6, as on the Palm.
         val rows = ctx.vbox()
         val cells = (0 until months.view.childCount).map { months.view.getChildAt(it) }
         months.view.removeAllViews()
-        for (r in 0 until 3) {
+        for (r in 0 until 2) {
             val row = ctx.hbox()
-            for (c in 0 until 4) row.addView(cells[r * 4 + c], LinearLayout.LayoutParams(0, WRAP, 1f).apply {
+            for (c in 0 until 6) row.addView(cells[r * 6 + c], LinearLayout.LayoutParams(0, WRAP, 1f).apply {
                 marginEnd = ctx.pp(1); topMargin = ctx.pp(1)
             })
             rows.addView(row, lp(MATCH))
