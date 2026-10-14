@@ -37,6 +37,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 ### Memo Pad
 
 - Memo List shows the memos. Use the All or category pop-up to select a category.
+- The Memo List and the Memo view have a Palm scroll bar on the right.
 - Each memo title is numbered. The title is the first line of the memo.
 - Tap New to make a memo.
 - Sort: manual or alphabetic. Select Options, then Preferences to set the sort order.
@@ -45,7 +46,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - Memo view has the Done and Details buttons.
 - Details: Category, Private and Delete.
 - The text is saved as you type. An empty memo is deleted.
-- Memo Pad has its own categories. Select Edit Categories in Options.
+- Memo Pad has its own categories. Select Edit Categories in Options. The Edit Categories form has OK, New, Rename and Delete buttons. Tap a name to select it.
 - Find searches the memos.
 - Export Backup and Import Backup include the memos.
 - In the Memo List, type a character to start a new memo with that text.
@@ -57,9 +58,10 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - **Menu** (the three-line icon at the bottom right, or a tap on the title tab) opens the Record, Edit and Options menus.
 - **Find** (the magnifier icon at the bottom right) searches the descriptions and notes of all records.
 - Font, Security (show, mask or hide private records), Purge, and a Green LCD screen option.
-- All screens use the proportions of the Palm IIIxe: the screen width is 160 Palm pixels, and the Font option selects the Palm small, standard or large font size. All text uses the Palm OS font.
+- All screens use the proportions of the Palm IIIxe: the screen width is 160 Palm pixels, and the Font option selects the Palm small, normal or large font size. Select Font shows three A buttons (small, normal and large) and no sample text. All text uses the Palm OS font.
 - On a screen that is taller than it is wide, the keyboard stays open below the app, and the app uses the area above the keyboard. On a square screen, the keyboard opens only when you select a line of text.
 - Export Backup and Import Backup save and load all records as a JSON file.
+- Delete Event, Delete To Do and Delete Memo have a Save archive copy on PC check box. When it is set, the app saves a backup file of the record before it deletes the record.
 
 ## Limits
 

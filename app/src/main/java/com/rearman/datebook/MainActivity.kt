@@ -281,7 +281,27 @@ open class MainActivity : Activity() {
 
     fun editEvent(o: Occ) = EventDetails(this, o.event, o.day, false).show()
 
-    /** Saves changes made in Event Details. Asks Current/All for repeating events. */
+    /**
+     * Palm form 2100 for a repeating record: the Current, Future and All choices, and Cancel.
+     * Each choice closes the form, then runs its action.
+     */
+    private fun repeatForm(title: String, message: String, current: () -> Unit, future: () -> Unit, all: () -> Unit) {
+        val d = PalmDialog(this, title, height = 122)
+        // Form coordinates. The body starts at form (4, 16), so each margin is the form value less that origin.
+        val area = FrameLayout(this)
+        fun place(v: View, formX: Int, formY: Int) =
+            area.addView(v, FrameLayout.LayoutParams(WRAP, WRAP).apply { leftMargin = pp(formX - 4); topMargin = pp(formY - 16) })
+        place(IconView(this, IconView.CONFIRM), 8, 19)
+        place(label(message, bold = true), 27, 19)
+        place(palmButton("Current", 61) { d.dismiss(); current() }, 9, 71)
+        place(palmButton("Future", 61) { d.dismiss(); future() }, 9, 88)
+        place(palmButton("All", 61) { d.dismiss(); all() }, 9, 105)
+        place(palmButton("Cancel", 44) { d.dismiss() }, 105, 105)
+        d.body.addView(area, LP(MATCH, WRAP))
+        d.show()
+    }
+
+    /** Saves changes made in Event Details. Asks Current/Future/All for repeating events. */
     fun saveEventEdit(orig: Event, occDay: Long, work: Event, isNew: Boolean, after: (Occ) -> Unit) {
         if (isNew) {
             work.id = 0
@@ -320,18 +340,20 @@ open class MainActivity : Activity() {
     fun deleteEvent(e: Event, d: Long) {
         val done = { selected = null; changed() }
         if (e.repeats) {
-            ask(
-                "Delete Repeating Event", "Delete the current event, all future events, or all events?",
-                "Current" to { e.exceptions.add(d); store.save(e); done() },
-                "Future" to {
+            repeatForm(
+                "Delete Repeating Event", "Delete the:\n-Current record,\n-this & all Future records,\n-All occurrences?",
+                current = { e.exceptions.add(d); store.save(e); done() },
+                future = {
                     if (d <= e.date) store.delete(e) else { e.repeatEnd = d - 1; store.save(e) }
                     done()
                 },
-                "All" to { store.delete(e); done() },
-                "Cancel" to {}
+                all = { store.delete(e); done() }
             )
         } else {
-            ask("Delete Event", "Delete selected event?", "Yes" to { store.delete(e); done() }, "No" to {})
+            palmAlert("Delete Event", "Delete selected\nevent?", 97, archiveY = 54) { archive ->
+                val delete = { store.delete(e); done() }
+                if (archive) exportFile("datebook-archive", store.exportJson(listOf(e), emptyList(), emptyList())) { delete() } else delete()
+            }
         }
     }
 
@@ -346,8 +368,12 @@ open class MainActivity : Activity() {
 
     fun saveTodo(t: Todo) { store.save(t); selectedTodo = t; render() }
 
-    fun deleteTodo(t: Todo) =
-        ask("Delete To Do", "Delete selected To Do item?", "Yes" to { store.delete(t); selectedTodo = null; render() }, "No" to {})
+    fun deleteTodo(t: Todo) {
+        val delete = { store.delete(t); selectedTodo = null; render() }
+        palmAlert("Delete To Do", "Delete selected To Do\nitem?", 97, archiveY = 54) { archive ->
+            if (archive) exportFile("todo-archive", store.exportJson(emptyList(), listOf(t), emptyList())) { delete() } else delete()
+        }
+    }
 
     fun openTodoNote(t: Todo) {
         NoteDialog(
@@ -459,7 +485,10 @@ open class MainActivity : Activity() {
 
         root.addView(header, lp(MATCH))
         root.addView(View(this).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, pp(2)))
-        root.addView(content, LP(MATCH, 0, 1f))
+        // Palm content areas: 18 to 139 (Day, Agenda, To Do, Memo), 15 to 145 (Week), 15 to 142 (Month).
+        // The title line ends at 15, and the bottom row starts at 147.
+        val (spaceTop, spaceBottom) = when (mode) { WEEK -> 0 to 2; MONTH -> 0 to 5; else -> 3 to 8 }
+        root.addView(content, LP(MATCH, 0, 1f).apply { topMargin = pp(spaceTop); bottomMargin = pp(spaceBottom) })
         bottom.addView(cmds, LP(0, WRAP, 1f))
         bottom.addView(ViewIcon(this, 4, false) { showMenu() })
         bottom.addView(ViewIcon(this, 5, false) { endEdit(); showFind() }, lp().apply { marginStart = -pp(1) })
@@ -484,8 +513,12 @@ open class MainActivity : Activity() {
         cmdButtons.forEach { it.setTextSize(TypedValue.COMPLEX_UNIT_PX, it.textSize * f) }
     }
 
-    /** The black title tab. With [clock], it shows the current time and keeps it current. */
-    internal fun tab(h: LinearLayout, title: String, clock: Boolean = false) {
+    /**
+     * The black title tab. With [clock], it shows the current time and keeps it current.
+     * With [width] (Palm px), the tab has that exact width and no spacer follows it, so the
+     * items after it keep their Palm x. The text is cut when it is wider than the tab.
+     */
+    internal fun tab(h: LinearLayout, title: String, clock: Boolean = false, width: Int = 0) {
         val v = if (clock) TextClock(this).apply {
             format12Hour = "h:mm a"; format24Hour = "H:mm"
             setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text)); includeFontPadding = false; typeface = Palm.typeface(this@MainActivity, true)
@@ -499,8 +532,8 @@ open class MainActivity : Activity() {
             setPadding(pp(3), pp(1), pp(3), pp(1))
             setOnClickListener { showMenu() }
         }
-        h.addView(t, lp().apply { marginStart = pp(1); gravity = Gravity.BOTTOM })
-        h.addView(View(this), LP(0, 1, 1f))
+        h.addView(t, (if (width > 0) LP(pp(width), WRAP) else lp()).apply { marginStart = pp(1); gravity = Gravity.BOTTOM })
+        if (width == 0) h.addView(View(this), LP(0, 1, 1f))
     }
 
     private fun arrow(left: Boolean, onClick: () -> Unit): TextView =
@@ -513,21 +546,24 @@ open class MainActivity : Activity() {
     private fun timeColW(pad: Int, min: Int): Int =
         maxOf(min, label("", bold = true).paint.measureText("00:00").toInt() + pad)
 
+    /** The four view icons: 9 px wide, 1 px apart, at x 1, 11, 21, 31 and y 148. */
     private fun viewIcons(cmds: LinearLayout) {
         for (k in 0..3) {
             cmds.addView(ViewIcon(this, k, mode == k) {
                 endEdit(); mode = k; prefs.lastView = k; render()
-            }, lp().apply { if (k > 0) marginStart = -pp(1) })
+            }, lp().apply { topMargin = pp(1); if (k > 0) marginStart = pp(1) })
         }
     }
 
-    internal fun cmd(cmds: LinearLayout, text: String, onClick: () -> Unit) {
-        // 11 Palm px tall with 1 px above and below: the 13 px bottom row of the Palm.
-        val b = palmButton(text, onClick).apply {
-            setPadding(pp(3), 0, pp(3), 0); minWidth = pp(16)
-        }
+    /**
+     * A command button, 12 px tall at y 147. [width] is the Palm width (0 keeps the text width).
+     * [gap] is the Palm space before the button.
+     */
+    internal fun cmd(cmds: LinearLayout, text: String, width: Int = 0, gap: Int = 2, onClick: () -> Unit) {
+        val b = palmButton(text, width, onClick = onClick)
+        if (width == 0) b.setPadding(pp(3), 0, pp(3), 0)
         cmdButtons.add(b)
-        cmds.addView(b, LP(WRAP, pp(11)).apply { marginStart = pp(2); topMargin = pp(1); bottomMargin = pp(1) })
+        cmds.addView(b, LP(WRAP, pp(12)).apply { marginStart = pp(gap) })
     }
 
     // ---------------- Day view ----------------
@@ -535,20 +571,21 @@ open class MainActivity : Activity() {
     private class Row(val occ: Occ?, val min: Int, val untimed: Boolean)
 
     private fun buildDay(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
-        tab(h, Fmt.dayTitle(day))
+        tab(h, Fmt.dayTitle(day), width = 57)
         val weekStart = day - Recur.dow(Fmt.ld(day))
-        h.addView(arrow(true) { day -= 7; render() })
+        h.addView(arrow(true) { day -= 7; render() }.apply { gravity = Gravity.CENTER },
+            LP(pp(12), pp(13)).apply { marginStart = pp(1) })
         for (i in 0..6) {
             val d = weekStart + i
             h.addView(label(Fmt.dowLetter[i], bold = true).apply {
                 gravity = Gravity.CENTER
-                setPadding(0, pp(1), 0, pp(1))
                 if (d == day) { background = box(Palm.INK, Palm.INK, 0f, 1f); setTextColor(Palm.paper) }
                 else if (d == today) background = box(Color.TRANSPARENT, Palm.INK, 1f, 1f)
                 setOnClickListener { endEdit(); day = d; selected = null; render() }
-            }, LP(pp(9), WRAP))
+            }, LP(pp(10), pp(12)).apply { topMargin = pp(1); if (i > 0) marginStart = pp(1) })
         }
-        h.addView(arrow(false) { day += 7; render() })
+        h.addView(arrow(false) { day += 7; render() }.apply { gravity = Gravity.CENTER },
+            LP(pp(11), pp(13)).apply { marginStart = pp(1) })
 
         val occs = dayOccs(day)
         val timed = occs.filter { !it.event.untimed }
@@ -642,8 +679,8 @@ open class MainActivity : Activity() {
         }
 
         viewIcons(cmds)
-        cmd(cmds, "New") { endEdit(); newEvent(null) }
-        cmd(cmds, "Details") {
+        cmd(cmds, "New", 22, 4) { endEdit(); newEvent(null) }
+        cmd(cmds, "Details", 33, 4) {
             endEdit()
             root.post {
                 val s = selected
@@ -651,7 +688,7 @@ open class MainActivity : Activity() {
                 else ask("Select Event", "Tap an event first, then tap Details.", "OK" to {})
             }
         }
-        cmd(cmds, "Go to") { endEdit(); DateDialog(this, "Go to Date", day) { d -> day = d; selected = null; render() }.show() }
+        cmd(cmds, "Go To", 28, 4) { endEdit(); DateDialog(this, "Go to Date", day) { d -> day = d; selected = null; render() }.show() }
     }
 
     /** A row text field. With [multiLine], Enter adds a new line (To Do items); without it, Enter ends the edit. */
@@ -763,10 +800,16 @@ open class MainActivity : Activity() {
     private fun buildWeek(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
         val ws = day - Recur.dow(Fmt.ld(day))
         val wd = Fmt.ld(ws)
-        tab(h, "${Fmt.monthShort[wd.monthValue - 1]} '${"%02d".format(wd.year % 100)}")
-        h.addView(arrow(true) { stepDate(-1) })
-        h.addView(label("Week ${wd.get(WeekFields.SUNDAY_START.weekOfWeekBasedYear())}", bold = true))
-        h.addView(arrow(false) { stepDate(1) })
+        val we = Fmt.ld(ws + 6)
+        fun short(x: LocalDate) = "${Fmt.monthShort[x.monthValue - 1]} '${"%02d".format(x.year % 100)}"
+        // "Dec '95 - Jan '96" when the week spans two months, else one "Oct '26".
+        tab(h, if (wd.month == we.month) short(wd) else "${short(wd)} - ${short(we)}")
+        h.addView(arrow(true) { stepDate(-1) }.apply { gravity = Gravity.CENTER; layoutParams = LP(pp(14), pp(13)) })
+        // 35 px label, 2 px from each arrow.
+        h.addView(label("Week  ${wd.get(WeekFields.SUNDAY_START.weekOfWeekBasedYear())}").apply {
+            layoutParams = LP(pp(35), WRAP).apply { marginStart = pp(2); marginEnd = pp(2) }
+        })
+        h.addView(arrow(false) { stepDate(1) }.apply { gravity = Gravity.CENTER; layoutParams = LP(pp(14), pp(13)) })
 
         val col = vbox()
         val grid = WeekGrid(this, this, ws) { o ->
@@ -774,6 +817,7 @@ open class MainActivity : Activity() {
             if (o != null) showEventBox(o)
         }
         // Lines up with the grid: its hour label column on the left, its 3 px margin on the right.
+        // The day letter, date and untimed dot rows: 27.5 Palm px, as the Palm gadget header.
         val head = hbox(Gravity.TOP).apply { setPadding(grid.gutter.toInt(), 0, pp(3), 0) }
         for (i in 0..6) {
             val d = ws + i
@@ -790,13 +834,15 @@ open class MainActivity : Activity() {
             cell.addView(label("•".repeat(minOf(untimed, 3)), size = Palm.text / 2).apply { setTextColor(fg); gravity = Gravity.CENTER })
             head.addView(cell, LP(0, WRAP, 1f))
         }
-        col.addView(head, lp(MATCH))
-        val sv = ScrollView(this).apply { addView(grid); isVerticalScrollBarEnabled = false }
+        col.addView(head, lp(MATCH, pp(27.5f)))
+        // fillViewport: the grid gets the viewport height and stretches its hours to fill it.
+        val sv = ScrollView(this).apply { addView(grid); isVerticalScrollBarEnabled = false; isFillViewport = true }
         col.addView(sv, LP(MATCH, 0, 1f))
         content.addView(col)
 
         viewIcons(cmds)
-        cmd(cmds, "Go to") { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
+        cmd(cmds, "Go To") { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
+        cmdButtons.last().setWidth(pp(28))
     }
 
     // ---------------- Month view ----------------
@@ -827,13 +873,14 @@ open class MainActivity : Activity() {
 
     private fun buildMonth(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
         val d = Fmt.ld(day)
-        tab(h, "${Fmt.monthShort[d.monthValue - 1]} ${d.year}")
-        h.addView(arrow(true) { stepDate(-1) })
-        h.addView(arrow(false) { stepDate(1) })
+        tab(h, "${d.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH)} ${d.year}")
+        h.addView(arrow(true) { stepDate(-1) }.apply { gravity = Gravity.CENTER; layoutParams = LP(pp(14), pp(13)) })
+        h.addView(arrow(false) { stepDate(1) }.apply { gravity = Gravity.CENTER; layoutParams = LP(pp(14), pp(13)) })
         content.addView(MonthGrid(this, this, d.year, d.monthValue),
             FrameLayout.LayoutParams(MATCH, WRAP))
         viewIcons(cmds)
-        cmd(cmds, "Go to") { DateDialog(this, "Go to Date", day) { x -> day = x; render() }.show() }
+        cmd(cmds, "Go To") { DateDialog(this, "Go to Date", day) { x -> day = x; render() }.show() }
+        cmdButtons.last().setWidth(pp(28))
     }
 
     // ---------------- Agenda view ----------------
@@ -850,14 +897,15 @@ open class MainActivity : Activity() {
     }
 
     private fun buildAgenda(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
-        tab(h, "", clock = true)
+        tab(h, "", clock = true, width = 80)
         val ld = Fmt.ld(day)
-        h.addView(arrow(true) { stepDate(-1) })
+        h.addView(arrow(true) { stepDate(-1) }.apply { gravity = Gravity.CENTER }, LP(pp(12), pp(13)))
         h.addView(label("${Fmt.dowShort[Recur.dow(ld)]}, ${Fmt.monthShort[ld.monthValue - 1]} ${ld.dayOfMonth}", bold = true)
-            .apply { setOnClickListener { goDay(day, null) } })
-        h.addView(arrow(false) { stepDate(1) })
+            .apply { gravity = Gravity.CENTER; maxLines = 1; setOnClickListener { goDay(day, null) } },
+            LP(pp(54), pp(12)).apply { topMargin = pp(1); marginStart = pp(1) })
+        h.addView(arrow(false) { stepDate(1) }.apply { gravity = Gravity.CENTER }, LP(pp(11), pp(13)))
 
-        val col = vbox().apply { setPadding(pp(4), pp(2.5f), pp(4), pp(4)) }
+        val col = vbox()
 
         val occs = dayOccs(day)
         if (occs.isEmpty()) col.addView(label("No Appointments Today", size = Palm.text).apply {
@@ -867,7 +915,6 @@ open class MainActivity : Activity() {
         val timeW = timeColW(pp(3), pp(19))
         for (o in occs) {
             val r = hbox(Gravity.TOP).apply {
-                setPadding(0, pp(2), 0, pp(2))
                 setOnClickListener { if (isMasked(o.event)) revealAsk(o.event) else goDay(day, o) }
             }
             r.addView(label(if (o.event.untimed) "•" else Fmt.timeShort(o.event.start), bold = true).apply {
@@ -876,21 +923,19 @@ open class MainActivity : Activity() {
             if (isMasked(o.event)) r.addView(label("").apply { background = box(Palm.LIGHT, Palm.LIGHT, 0f, 1f) },
                 LP(0, pp(7), 1f))
             else r.addView(label(o.event.title.ifBlank { "(no description)" }), LP(0, WRAP, 1f))
-            col.addView(r, lp(MATCH))
+            col.addView(r, LP(MATCH, pp(11)).apply { marginEnd = pp(7) })
         }
 
-        col.addView(View(this).apply { setBackgroundColor(Palm.INK) },
-            LP(resources.displayMetrics.widthPixels / 3, pp(1)).apply {
-                topMargin = pp(4); bottomMargin = pp(1.5f); gravity = Gravity.CENTER_HORIZONTAL
-            })
+        // The To Do divider band: 13 px at y 86, with the category trigger at x 143 (17 px wide).
         val th = hbox()
         th.addView(View(this), LP(0, 1, 1f))
-        th.addView(popupTrigger(categoryLabel(prefs.todoCategory)) { tv ->
+        val trigger = popupTrigger(categoryLabel(prefs.todoCategory)) { tv ->
             pickCategory(tv, prefs.todoCategory, includeAll = true) { id -> prefs.todoCategory = id; render() }
-        })
-        col.addView(th, lp(MATCH))
+        }.apply { setPadding(pp(1), 0, pp(1), 0) }
+        th.addView(trigger, LP(pp(17), pp(11)).apply { topMargin = pp(1) })
+        val todoCol = vbox()
         val tds = agendaTodos()
-        if (tds.isEmpty()) col.addView(label("No open items",size = Palm.text).apply {
+        if (tds.isEmpty()) todoCol.addView(label("No open items",size = Palm.text).apply {
             setPadding(0, pp(2.5f), 0, pp(2.5f))
         })
         for (t in tds) {
@@ -909,11 +954,19 @@ open class MainActivity : Activity() {
             }, LP(0, WRAP, 1f))
             if (prefs.showDueDates) r.addView(todoDueLabel(t, day))
             if (prefs.showCategories) r.addView(todoCategoryLabel(t))
-            col.addView(r, lp(MATCH))
+            todoCol.addView(r, lp(MATCH).apply { marginEnd = pp(7) })
         }
-        content.addView(ScrollView(this).apply { addView(col); isVerticalScrollBarEnabled = false })
+        // Palm 2200: appointments in 68 px (y 18 to 86), the divider band (13 px), then the To Do list.
+        // The 7 px at the right are the scroll bar gap.
+        val apptScroll = ScrollView(this).apply { addView(col); isVerticalScrollBarEnabled = false }
+        val todoScroll = ScrollView(this).apply { addView(todoCol); isVerticalScrollBarEnabled = false }
+        val page = vbox()
+        page.addView(apptScroll, LP(MATCH, pp(68)))
+        page.addView(th, LP(MATCH, pp(13)))
+        page.addView(todoScroll, LP(MATCH, 0, 1f))
+        content.addView(page, LP(MATCH, MATCH))
         viewIcons(cmds)
-        cmd(cmds, "Go to") { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
+        cmd(cmds, "Go To", 28, 6) { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
     }
 
     // ---------------- To Do List ----------------
@@ -1002,10 +1055,12 @@ open class MainActivity : Activity() {
 
     private fun buildTodo(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
         tab(h, "To Do List")
+        // Palm x 143 to 160, 13 px high. The name grows the trigger to the left. The header
+        // has 1 px of right padding, so a -1 px end margin puts the right edge at x 160.
         h.addView(popupTrigger(categoryLabel(prefs.todoCategory)) { tv ->
             endEdit()
             pickCategory(tv, prefs.todoCategory, includeAll = true) { id -> prefs.todoCategory = id; render() }
-        })
+        }.apply { minWidth = pp(17) }, LP(WRAP, pp(13)).apply { marginEnd = -pp(1) })
 
         val col = vbox()
         val items = visibleTodos()
@@ -1042,7 +1097,7 @@ open class MainActivity : Activity() {
         focusView?.let { f -> f.post { f.requestFocus(); f.setSelection(f.text.length) } }
 
         cmd(cmds, "New") { endEdit(); newTodo() }
-        cmd(cmds, "Details") {
+        cmd(cmds, "Details...") {
             endEdit()
             root.post {
                 val t = selectedTodo?.let { s -> store.todos.firstOrNull { it.id == s.id } }
@@ -1051,6 +1106,15 @@ open class MainActivity : Activity() {
             }
         }
         cmd(cmds, "Show...") { endEdit(); showShowOptions() }
+        // Palm x 1, 33 and 82 with the Palm widths. The cmds row starts at x 1 already (bottom padding),
+        // so New has no start margin. Gaps are 6 px. Zero padding keeps the text inside the fixed width.
+        val (newB, detB, showB) = cmdButtons.takeLast(3)
+        for ((b, w) in listOf(newB to 26, detB to 43, showB to 38)) {
+            b.setWidth(pp(w)); b.setPadding(0, 0, 0, 0)
+        }
+        (newB.layoutParams as LinearLayout.LayoutParams).marginStart = 0
+        (detB.layoutParams as LinearLayout.LayoutParams).marginStart = pp(6)
+        (showB.layoutParams as LinearLayout.LayoutParams).marginStart = pp(6)
         cmds.addView(View(this), LP(0, 1, 1f))
     }
 
@@ -1161,13 +1225,17 @@ open class MainActivity : Activity() {
     private fun showFind() {
         val d = PalmDialog(this, "Find", height = 60)
         val f = field("", "Find text")
-        d.add(f)
-        d.button("OK") {
+        // Form coordinates. The body starts at form (4, 16), so each margin is the form value less that origin.
+        val row = FrameLayout(this)
+        row.addView(label("Find:", bold = true), FrameLayout.LayoutParams(WRAP, WRAP).apply { leftMargin = pp(3); topMargin = pp(4) })
+        row.addView(f, FrameLayout.LayoutParams(pp(112), pp(11)).apply { leftMargin = pp(28); topMargin = pp(4) })
+        d.add(row, 0)
+        d.button("OK", 37) {
             val q = f.text.toString().trim()
             d.dismiss(); hideKeyboard()
             if (q.isNotEmpty()) showFindResults(q)
         }
-        d.button("Cancel") { d.dismiss() }
+        d.button("Cancel", 37) { d.dismiss() }
         d.show()
         f.requestFocus()
         d.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
@@ -1175,7 +1243,15 @@ open class MainActivity : Activity() {
 
     private fun showFindResults(q: String) {
         val d = PalmDialog(this, "Find", height = 156)
-        d.add(label("Matches for \"$q\"", bold = true))
+        // The body starts at form (2, 16) here, so each margin is the form value less that origin.
+        d.body.setPadding(pp(1), pp(2), pp(1), pp(1))
+        val list = vbox()
+        val area = FrameLayout(this)
+        area.addView(label("Matches for \"$q\"", bold = true), FrameLayout.LayoutParams(WRAP, WRAP).apply { leftMargin = pp(5) })
+        area.addView(ScrollView(this).apply { isVerticalScrollBarEnabled = false; addView(list) },
+            FrameLayout.LayoutParams(pp(152), pp(99)).apply { topMargin = pp(15) })
+        d.add(area, 0)
+        fun addRow(v: View, top: Int) = list.addView(v, LP(MATCH, WRAP).apply { topMargin = pp(top) })
         val hideP = prefs.security != 0
         val evs = store.events.filter {
             !(hideP && it.isPrivate) && (it.title.contains(q, true) || it.note.contains(q, true))
@@ -1187,30 +1263,30 @@ open class MainActivity : Activity() {
             !(hideP && it.isPrivate) && it.text.contains(q, true)
         }
         fun result(text: String, onClick: () -> Unit) =
-            d.add(label(text).apply { setPadding(pp(3), pp(3), pp(1.5f), pp(3)); setOnClickListener { d.dismiss(); onClick() } }, 0)
-        d.add(label("Date Book", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
-        if (evs.isEmpty()) d.add(label("  No matches"), 0)
+            addRow(label(text).apply { setPadding(pp(3), pp(3), pp(1.5f), pp(3)); setOnClickListener { d.dismiss(); onClick() } }, 0)
+        addRow(label("Date Book", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
+        if (evs.isEmpty()) addRow(label("  No matches"), 0)
         for (e in evs) {
             val shown = nextOccurrence(e)
             result("${Fmt.shortDate(shown)}  ${e.title.ifBlank { "(no description)" }}") {
                 if (isTodoApp || isMemoApp) openDateBook(shown, e.id) else goDay(shown, Occ(e, shown))
             }
         }
-        d.add(label("To Do List", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
-        if (tds.isEmpty()) d.add(label("  No matches"), 0)
+        addRow(label("To Do List", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
+        if (tds.isEmpty()) addRow(label("  No matches"), 0)
         for (t in tds) {
             result(t.title.ifBlank { "(no description)" }) {
                 if (isTodoApp) { prefs.todoCategory = -1; selectedTodo = t; render() } else openTodoApp(t.id)
             }
         }
-        d.add(label("Memo Pad", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
-        if (memos.isEmpty()) d.add(label("  No matches"), 0)
+        addRow(label("Memo Pad", bold = true).apply { setTextColor(Palm.GRAY) }, 10)
+        if (memos.isEmpty()) addRow(label("  No matches"), 0)
         for (m in memos) {
             result(m.title.ifBlank { "(no description)" }) {
                 if (isMemoApp) { prefs.memoCategory = -1; memoOpen = m; render() } else openMemoApp(m.id)
             }
         }
-        d.button("Done") { d.dismiss() }
+        d.button("Done", 37) { d.dismiss() }
         d.show()
     }
 

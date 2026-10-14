@@ -34,7 +34,7 @@ class WeekGrid(
     private val weekStart: Long,
     private val onSelect: (Occ?) -> Unit
 ) : View(ctx) {
-    /** Height of one hour. onMeasure sets it so each two-hour cell is square. */
+    /** Height of one hour. onMeasure sets it: square two-hour cells, or taller to fill the viewport. */
     private var hourH = ctx.ppf(11f)
     /** Space above the first and below the last hour line, so the labels centered on them show. */
     private val y0 = ctx.ppf(3f)
@@ -88,10 +88,19 @@ class WeekGrid(
     private fun colAt(x: Float): Int =
         if (x < gutter || x > width - mr) -1 else ((x - gutter) / colW()).toInt().coerceIn(0, 6)
 
+    /**
+     * Sets the hour height. Square two-hour cells give the minimum. When the parent gives a
+     * viewport height (ScrollView fillViewport), the hours stretch to fill it. Longer ranges
+     * need more than the viewport, so they keep square cells and scroll.
+     * Limit: the fill applies to any range that fits the viewport, not only the default 8 to 18.
+     */
     override fun onMeasure(w: Int, h: Int) {
         val wPx = MeasureSpec.getSize(w)
-        hourH = (wPx - gutter - mr) / 7f / 2f
-        setMeasuredDimension(wPx, ((h1 - h0) * hourH + 2 * y0).toInt() + 2)
+        val frame = 2 * y0 + 2
+        val fit = if (MeasureSpec.getMode(h) == MeasureSpec.UNSPECIFIED) 0f
+            else (MeasureSpec.getSize(h) - frame) / (h1 - h0)
+        hourH = maxOf((wPx - gutter - mr) / 7f / 2f, fit)
+        setMeasuredDimension(wPx, Math.round((h1 - h0) * hourH + frame))
     }
 
     /** The y position of [min] minutes after midnight, held inside the box. */
@@ -268,8 +277,8 @@ class MonthGrid(
 
 /**
  * The icons in the bottom row: the four views (0 to 3), then Menu (4) and Find (5).
- * Each icon is 12 Palm px wide and 13 tall, with an 11 px tall box. The box has no side
- * margin, so icons placed with a -1 px margin share one border line, as Palm push buttons do.
+ * The four views are 9 Palm px wide and 11 tall, a full box with no inset. Menu and Find
+ * are 12 wide and 13 tall, with a 1 px inset.
  */
 @SuppressLint("ViewConstructor")
 class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean, onClick: () -> Unit) : View(ctx) {
@@ -277,13 +286,15 @@ class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean,
 
     init { setOnClickListener { onClick() }; contentDescription = listOf("Day", "Week", "Month", "Agenda", "Menu", "Find")[kind] }
 
-    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(context.pp(12), context.pp(13))
+    override fun onMeasure(w: Int, h: Int) =
+        if (kind < 4) setMeasuredDimension(context.pp(9), context.pp(11))
+        else setMeasuredDimension(context.pp(12), context.pp(13))
 
     override fun onDraw(c: Canvas) {
         val w = width.toFloat()
         val h = height.toFloat()
-        val m = context.ppf(1f)
         val mx = p.strokeWidth / 2
+        val m = if (kind < 4) mx else context.ppf(1f)
         p.style = Paint.Style.FILL
         p.color = if (active) Palm.INK else Palm.paper
         c.drawRect(mx, m, w - mx, h - m, p)

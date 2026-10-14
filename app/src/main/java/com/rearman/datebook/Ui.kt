@@ -122,9 +122,12 @@ fun Context.box(fill: Int, stroke: Int, strokePp: Float, radiusPp: Float, dashed
         else if (strokePp > 0) setStroke(pp(strokePp), stroke)
     }
 
-/** Rounded Palm command button. Inverts while pressed. */
-fun Context.palmButton(text: CharSequence, onClick: () -> Unit): TextView =
-    label(text, bold = true).apply {
+/**
+ * Rounded Palm command button in the regular font, 12 px high. Inverts while pressed.
+ * [width] is the Palm width. 0 gives the button at least 16 px wide.
+ */
+fun Context.palmButton(text: CharSequence, width: Int = 0, onClick: () -> Unit): TextView =
+    label(text, bold = false).apply {
         gravity = Gravity.CENTER
         val normal = box(Palm.paper, Palm.INK, 1f, 3.5f)
         val pressed = box(Palm.INK, Palm.INK, 1f, 3.5f)
@@ -138,8 +141,10 @@ fun Context.palmButton(text: CharSequence, onClick: () -> Unit): TextView =
                 intArrayOf(Palm.paper, Palm.INK)
             )
         )
-        setPadding(pp(3), pp(1), pp(3), pp(1))
-        minWidth = pp(16)
+        setPadding(pp(2), 0, pp(2), 0)
+        minHeight = pp(12)
+        minimumHeight = pp(12)
+        if (width > 0) setWidth(pp(width)) else minWidth = pp(16)
         setOnClickListener { onClick() }
     }
 
@@ -147,7 +152,7 @@ fun Context.palmButton(text: CharSequence, onClick: () -> Unit): TextView =
 fun Context.selector(text: String, onClick: (TextView) -> Unit): TextView =
     label(text).apply {
         background = box(Color.TRANSPARENT, Palm.GRAY, 1f, 1f, dashed = true)
-        setPadding(pp(2), pp(1), pp(2), pp(1))
+        setPadding(pp(2), 0, pp(2), 0)
         setOnClickListener { onClick(this) }
     }
 
@@ -167,13 +172,13 @@ fun Context.checkBox(text: String, checked: Boolean, onChange: (Boolean) -> Unit
         setTextColor(Palm.INK)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, ppf(Palm.text))
         includeFontPadding = false
-        typeface = Palm.typeface(context, false)
-        buttonDrawable = PalmCheckDrawable(this@checkBox, pp(9))
-        minHeight = 0
-        minimumHeight = 0
+        typeface = Palm.typeface(context, true)
+        buttonDrawable = PalmCheckDrawable(this@checkBox, pp(10))
+        minHeight = pp(14)
+        minimumHeight = pp(14)
         minWidth = 0
         minimumWidth = 0
-        setPadding(pp(2), 0, 0, 0)
+        setPadding(pp(3), 0, 0, 0)
         setOnCheckedChangeListener { _, b -> onChange(b) }
     }
 
@@ -224,7 +229,7 @@ fun Context.field(text: String, hint: String = "", multiLine: Boolean = false): 
         typeface = Palm.typeface(context, false)
         minHeight = 0
         minimumHeight = 0
-        setPadding(pp(1), pp(1), pp(1), pp(1))
+        setPadding(pp(1), 0, pp(1), 0)
         backgroundTintList = ColorStateList.valueOf(Palm.GRAY)
         inputType = if (multiLine)
             InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
@@ -240,12 +245,16 @@ fun Context.numberField(value: Int): EditText = field(value.toString()).apply {
 /**
  * A row of push buttons where one is selected (shown inverted),
  * like the priority 1-5 buttons or the repeat-type tabs.
+ * [height] is the cell height in Palm px. [widths] gives a fixed Palm width for each cell.
+ * Without [widths] the cells share the row width.
  */
 class PushGroup(
     private val ctx: Context,
     labels: List<String>,
     initial: Int,
     private val multi: Boolean = false,
+    height: Int = 11,
+    private val widths: List<Int>? = null,
     private val onChange: (PushGroup) -> Unit = {}
 ) {
     val view: LinearLayout = ctx.hbox()
@@ -254,10 +263,13 @@ class PushGroup(
     val on = BooleanArray(labels.size)
 
     init {
+        val cellPx = ctx.pp(height)
         labels.forEachIndexed { i, s ->
             val tv = ctx.label(s, bold = true).apply {
                 gravity = Gravity.CENTER
-                setPadding(ctx.pp(2), ctx.pp(1), ctx.pp(2), ctx.pp(1))
+                minHeight = cellPx
+                minimumHeight = cellPx
+                setPadding(ctx.pp(2), 0, ctx.pp(2), 0)
                 setOnClickListener {
                     if (multi) on[i] = !on[i] else selected = i
                     refresh()
@@ -265,7 +277,10 @@ class PushGroup(
                 }
             }
             cells.add(tv)
-            view.addView(tv, LP(0, WRAP, 1f).apply { marginEnd = ctx.pp(1) })
+            val cellLp = if (widths != null)
+                LP(ctx.pp(widths[i]), WRAP)
+            else LP(0, WRAP, 1f)
+            view.addView(tv, cellLp.apply { marginEnd = ctx.pp(1) })
         }
         refresh()
     }
@@ -286,10 +301,11 @@ class PushGroup(
  * [height] is the form height in Palm px, from the Palm OS 3.5 form resources. The form is
  * 156 px wide and sits 2 px above the bottom of the screen, as on the Palm. 0 fits the height
  * to the content (alerts). 160 fills the screen (Note view).
+ * The button row sits 5 px in from the left edge and 5 px above the bottom edge of the form.
  */
 open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true, height: Int = 0) : Dialog(ctx) {
     val body: LinearLayout = ctx.vbox().apply { setPadding(ctx.pp(3), ctx.pp(2), ctx.pp(3), ctx.pp(1)) }
-    val buttons: LinearLayout = ctx.hbox().apply { setPadding(ctx.pp(3), ctx.pp(2), ctx.pp(3), ctx.pp(3)) }
+    val buttons: LinearLayout = ctx.hbox().apply { setPadding(ctx.pp(4), ctx.pp(2), ctx.pp(4), ctx.pp(4)) }
     private val c = ctx
 
     init {
@@ -334,19 +350,23 @@ open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true, heigh
         return v
     }
 
-    /** "Label:  [control]" row, Palm style with right-aligned bold label. */
-    fun row(name: String, vararg views: View): LinearLayout {
+    /**
+     * "Label:  [control]" row, Palm style with a right-aligned bold label. The label ends at
+     * form x [labelEnd]. The controls follow it 5 px on. The row is 14 px high, with 2 px above it.
+     */
+    fun row(name: String, vararg views: View, labelEnd: Int = 51): LinearLayout {
         val r = c.hbox()
-        r.addView(c.label(name, bold = true).apply { gravity = Gravity.END; minWidth = c.pp(40) },
-            lp().apply { marginEnd = c.pp(3) })
+        r.addView(c.label(name, bold = true).apply { gravity = Gravity.END; minWidth = c.pp(labelEnd - 4) },
+            lp().apply { marginEnd = c.pp(5) })
         views.forEach { r.addView(it, lp().apply { marginEnd = c.pp(2) }) }
-        add(r)
+        body.addView(r, LP(MATCH, c.pp(14)).apply { topMargin = c.pp(2) })
         return r
     }
 
-    fun button(text: String, onClick: () -> Unit): TextView {
-        val b = c.palmButton(text, onClick)
-        buttons.addView(b, lp().apply { marginEnd = c.pp(4) })
+    /** Adds a command button to the button row. [width] is the Palm width, 0 for the default. */
+    fun button(text: String, width: Int = 0, onClick: () -> Unit): TextView {
+        val b = c.palmButton(text, width, onClick)
+        buttons.addView(b, lp().apply { marginEnd = c.pp(6) })
         return b
     }
 }
@@ -416,26 +436,82 @@ fun Context.popupList(anchor: View, items: List<String>, selected: Int, onPick: 
 /** A message with buttons. Each button closes the dialog and then runs its action. */
 fun Context.ask(title: String, message: String, vararg choices: Pair<String, () -> Unit>) {
     val d = PalmDialog(this, title)
-    d.add(label(message).apply { setPadding(0, pp(1), 0, pp(3)) })
+    val line = hbox(Gravity.TOP)
+    line.addView(IconView(this, IconView.CONFIRM), LP(WRAP, WRAP).apply { topMargin = pp(1) })
+    line.addView(label(message).apply { setPadding(0, pp(1), 0, pp(3)) },
+        LP(WRAP, WRAP).apply { marginStart = pp(8) })
+    d.add(line)
     for ((text, action) in choices) d.button(text) { d.dismiss(); action() }
+    d.show()
+}
+
+/**
+ * A Palm confirmation form: the question icon, a bold message and OK and Cancel buttons.
+ * Lines of [message] break at "\n". [archiveY] > 0 adds a "Save archive copy on PC" check box
+ * at that form y. [archiveOn] sets the start state of that check box. [onOk] gets the state of
+ * that check box, false when there is none.
+ */
+fun Context.palmAlert(
+    title: String,
+    message: String,
+    height: Int,
+    archiveY: Int = 0,
+    archiveOn: Boolean = false,
+    okText: String = "OK",
+    onOk: (archive: Boolean) -> Unit
+) {
+    val d = PalmDialog(this, title, height = height)
+    // Form coordinates. The body starts at form (4, 16), so each margin is the form value less that origin.
+    val area = FrameLayout(this)
+    fun place(v: View, formX: Int, formY: Int) =
+        area.addView(v, FrameLayout.LayoutParams(WRAP, WRAP).apply {
+            leftMargin = pp(formX - 4)
+            topMargin = pp(formY - 16)
+        })
+    place(IconView(this, IconView.CONFIRM), 8, 19)
+    place(label(message, bold = true), 32, 19)
+    val archive: CheckBox? = if (archiveY > 0)
+        checkBox("Save archive copy on PC", archiveOn).also { place(it, 12, archiveY) }
+    else null
+    d.body.addView(area, LP(MATCH, WRAP))
+    d.button(okText, 37) { d.dismiss(); onOk(archive?.isChecked == true) }
+    d.button("Cancel", 37) { d.dismiss() }
     d.show()
 }
 
 fun Context.toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
 
-/** Small drawn icons for the Day view: note, alarm, repeat. */
+/** Small drawn icons: note, alarm and repeat for the Day view, and the 16 px confirmation icon. */
 class IconView(ctx: Context, private val kind: Int) : View(ctx) {
-    companion object { const val NOTE = 0; const val ALARM = 1; const val REPEAT = 2 }
+    companion object { const val NOTE = 0; const val ALARM = 1; const val REPEAT = 2; const val CONFIRM = 3 }
     private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
         color = Palm.INK; style = android.graphics.Paint.Style.STROKE; strokeWidth = ctx.ppf(1f)
     }
+    // CONFIRM: a filled disc with a "?" in the bold Palm font.
+    private val disc = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = Palm.INK; style = android.graphics.Paint.Style.FILL
+    }
+    private val query = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = android.graphics.Paint.Align.CENTER
+        textSize = ctx.ppf(12f)
+        typeface = Palm.typeface(ctx, true)
+    }
 
-    override fun onMeasure(w: Int, h: Int) { val s = context.pp(8); setMeasuredDimension(s, s) }
+    override fun onMeasure(w: Int, h: Int) {
+        val s = context.pp(if (kind == CONFIRM) 16 else 8)
+        setMeasuredDimension(s, s)
+    }
 
     override fun onDraw(c: android.graphics.Canvas) {
         val s = width.toFloat()
         val m = s * 0.15f
         when (kind) {
+            CONFIRM -> {
+                c.drawCircle(s / 2, s / 2, s / 2, disc)
+                query.color = Palm.paper
+                val fm = query.fontMetrics
+                c.drawText("?", s / 2, s / 2 - (fm.ascent + fm.descent) / 2, query)
+            }
             NOTE -> {
                 c.drawRect(m, m, s - m, s - m, paint)
                 c.drawLine(m * 2, s * 0.4f, s - m * 2, s * 0.4f, paint)
