@@ -1159,7 +1159,7 @@ open class MainActivity : Activity() {
     // ---------------- Find ----------------
 
     private fun showFind() {
-        val d = PalmDialog(this, "Find")
+        val d = PalmDialog(this, "Find", height = 60)
         val f = field("", "Find text")
         d.add(f)
         d.button("OK") {
@@ -1174,7 +1174,7 @@ open class MainActivity : Activity() {
     }
 
     private fun showFindResults(q: String) {
-        val d = PalmDialog(this, "Find")
+        val d = PalmDialog(this, "Find", height = 156)
         d.add(label("Matches for \"$q\"", bold = true))
         val hideP = prefs.security != 0
         val evs = store.events.filter {

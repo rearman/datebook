@@ -12,7 +12,7 @@ class DateDialog(
     title: String,
     initial: Long,
     private val onPick: (Long) -> Unit
-) : PalmDialog(ctx, title, scroll = false) {
+) : PalmDialog(ctx, title, scroll = false, height = 156) {
     private var year: Int
     private var month: Int
     private val selected: Long = initial
@@ -95,7 +95,7 @@ class TimeDialog(
     start: Int,
     end: Int,
     private val onPick: (untimed: Boolean, start: Int, end: Int) -> Unit
-) : PalmDialog(ctx, "Set Time") {
+) : PalmDialog(ctx, "Set Time", height = 156) {
     private var s = if (untimed) 8 * 60 else start
     private var e = if (untimed) 9 * 60 else end
     private var editingEnd = false
@@ -260,7 +260,7 @@ class RepeatDialog(
     private val ctx: Context,
     source: Event,
     private val onPick: (Event) -> Unit
-) : PalmDialog(ctx, "Change Repeat") {
+) : PalmDialog(ctx, "Change Repeat", height = 156) {
     private val ev = source.deepCopy()
     private val tabs: PushGroup
     private val area = ctx.vbox()
@@ -365,7 +365,7 @@ class NoteDialog(
     text: String,
     onDone: (String) -> Unit,
     onDelete: (() -> Unit)?
-) : PalmDialog(ctx, title) {
+) : PalmDialog(ctx, title, height = 160) {
     init {
         val f = ctx.field(text, "Write a note", multiLine = true).apply {
             minLines = 8

@@ -169,7 +169,7 @@ internal fun MainActivity.newMemo(initial: String = "") {
 private fun MainActivity.showMemoDetails(m: Memo) {
     var cat = m.category
     var priv = m.isPrivate
-    val d = PalmDialog(this, "Memo Details")
+    val d = PalmDialog(this, "Memo Details", height = 72)
     d.row("Category:", popupTrigger(categoryLabel(cat)) { tv ->
         pickCategory(tv, cat, includeAll = false, app = 1) { id -> cat = id; tv.setTrigger(categoryLabel(id)) }
     })
@@ -197,7 +197,7 @@ internal fun MainActivity.deleteMemoAsk(m: Memo) {
 internal fun MainActivity.showMemoPreferences() {
     val names = listOf("Manual", "Alphabetic")
     var sort = prefs.memoSort
-    val d = PalmDialog(this, "Preferences")
+    val d = PalmDialog(this, "Preferences", height = 57)
     d.row("Sort by:", popupTrigger(names[sort]) { tv ->
         popupList(tv, names, sort) { i -> sort = i; tv.setTrigger(names[i]) }
     })

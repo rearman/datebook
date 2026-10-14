@@ -281,8 +281,13 @@ class PushGroup(
     }
 }
 
-/** A Palm modal form that fills the app area: black title bar, bordered body, buttons along the bottom. */
-open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true) : Dialog(ctx) {
+/**
+ * A Palm modal form: black title bar, bordered body, buttons along the bottom.
+ * [height] is the form height in Palm px, from the Palm OS 3.5 form resources. The form is
+ * 156 px wide and sits 2 px above the bottom of the screen, as on the Palm. 0 fits the height
+ * to the content (alerts). 160 fills the screen (Note view).
+ */
+open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true, height: Int = 0) : Dialog(ctx) {
     val body: LinearLayout = ctx.vbox().apply { setPadding(ctx.pp(3), ctx.pp(2), ctx.pp(3), ctx.pp(1)) }
     val buttons: LinearLayout = ctx.hbox().apply { setPadding(ctx.pp(3), ctx.pp(2), ctx.pp(3), ctx.pp(3)) }
     private val c = ctx
@@ -310,7 +315,16 @@ open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true) : Dia
         frame.addView(buttons, lp(MATCH))
         setContentView(frame)
         window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+        val w = window
+        if (height >= 160) {
+            w?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+        } else if (w != null) {
+            w.setLayout(ctx.pp(156), if (height > 0) ctx.pp(height) else WindowManager.LayoutParams.WRAP_CONTENT)
+            w.setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+            w.attributes = w.attributes.apply { y = ctx.pp(2) }
+            // A Palm form draws over the screen behind it with no dimming.
+            w.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        }
         window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
     }
 

@@ -13,7 +13,7 @@ class EventDetails(
     private val orig: Event,
     private val occDay: Long,
     private val isNew: Boolean
-) : PalmDialog(act, "Event Details") {
+) : PalmDialog(act, "Event Details", height = 119) {
     private val work = orig.deepCopy().apply { date = occDay }
     private val alarmBox = act.hbox()
     private val adv = act.numberField(work.alarmAdvance)
@@ -62,7 +62,7 @@ class EventDetails(
 }
 
 /** Palm "To Do Item Details" form. */
-class TodoDetails(private val act: MainActivity, private val t: Todo) : PalmDialog(act, "To Do Item Details") {
+class TodoDetails(private val act: MainActivity, private val t: Todo) : PalmDialog(act, "To Do Item Details", height = 101) {
     private val work = t.copy()
 
     init {
@@ -90,7 +90,7 @@ class TodoDetails(private val act: MainActivity, private val t: Todo) : PalmDial
 // ---------------- Option dialogs ----------------
 
 fun MainActivity.showPreferences() {
-    val d = PalmDialog(this, "Preferences")
+    val d = PalmDialog(this, "Preferences", height = 156)
     val hourNames = (0..24).map { if (it == 24) "Midnight" else Fmt.time(it * 60) }
     var start = prefs.dayStart
     var end = prefs.dayEnd
@@ -146,7 +146,7 @@ fun MainActivity.showPreferences() {
 }
 
 fun MainActivity.showDisplayOptions() {
-    val d = PalmDialog(this, "Display Options")
+    val d = PalmDialog(this, "Display Options", height = 148)
     d.add(label("Day View:", bold = true))
     val bars = checkBox("Show Time Bars", prefs.timeBars)
     val comp = checkBox("Compress Day View", prefs.compress)
@@ -170,7 +170,7 @@ fun MainActivity.showDisplayOptions() {
 }
 
 fun MainActivity.showFont() {
-    val d = PalmDialog(this, "Select Font")
+    val d = PalmDialog(this, "Select Font", height = 61)
     val g = PushGroup(this, listOf("Small", "Normal", "Large"), prefs.font)
     d.add(g.view)
     d.add(label("Sample: Lunch with Ann 12:00").apply { gravity = Gravity.CENTER }, 5)
@@ -180,7 +180,7 @@ fun MainActivity.showFont() {
 }
 
 fun MainActivity.showSecurity() {
-    val d = PalmDialog(this, "Security")
+    val d = PalmDialog(this, "Security", height = 80)
     d.add(label("Current Privacy:", bold = true))
     val g = PushGroup(this, listOf("Show", "Mask", "Hide"), prefs.security)
     d.add(g.view)
@@ -199,7 +199,7 @@ fun MainActivity.showAbout(todo: Boolean) {
 }
 
 fun MainActivity.showShowOptions() {
-    val d = PalmDialog(this, "To Do Preferences")
+    val d = PalmDialog(this, "To Do Preferences", height = 156)
     val sorts = listOf("Priority, Due Date", "Due Date, Priority", "Category, Priority", "Category, Due Date")
     var sort = prefs.sortMode
     d.row("Sort by:", popupTrigger(sorts[sort]) { tv -> popupList(tv, sorts, sort) { i -> sort = i; tv.setTrigger(sorts[i]) } })
@@ -226,7 +226,7 @@ fun MainActivity.showShowOptions() {
  * [app] 0 edits the To Do categories, 1 the Memo Pad categories.
  */
 fun MainActivity.showEditCategories(app: Int = 0) {
-    val d = PalmDialog(this, "Edit Categories")
+    val d = PalmDialog(this, "Edit Categories", height = 156)
     val list = vbox()
     fun fill() {
         list.removeAllViews()
@@ -250,7 +250,7 @@ fun MainActivity.showEditCategories(app: Int = 0) {
 }
 
 private fun MainActivity.renameCategory(cat: Category?, app: Int, after: () -> Unit) {
-    val d = PalmDialog(this, if (cat == null) "New Category" else "Rename Category")
+    val d = PalmDialog(this, if (cat == null) "New Category" else "Rename Category", height = 69)
     val f = field(cat?.name ?: "", "Category name")
     d.add(f)
     d.button("OK") {
@@ -273,7 +273,7 @@ private fun MainActivity.renameCategory(cat: Category?, app: Int, after: () -> U
 }
 
 fun MainActivity.showPurgeEvents() {
-    val d = PalmDialog(this, "Purge")
+    val d = PalmDialog(this, "Purge", height = 97)
     d.add(label("Delete events older than:"))
     val names = listOf("1 week", "2 weeks", "3 weeks", "1 month")
     val days = listOf(7, 14, 21, 30)
@@ -297,7 +297,7 @@ fun MainActivity.showPurgeEvents() {
 fun MainActivity.showPurgeTodos() {
     val done = store.todos.filter { it.done }
     if (done.isEmpty()) { toast("No completed items."); return }
-    val d = PalmDialog(this, "Purge")
+    val d = PalmDialog(this, "Purge", height = 97)
     d.add(label("Delete all ${done.size} completed To Do items?"))
     val archive = checkBox("Save archive copy", true)
     d.add(archive)
