@@ -475,7 +475,7 @@ open class MainActivity : Activity() {
         header.setPadding(0, 0, pp(1), 0)
         val content = FrameLayout(this)
         cmdButtons.clear()
-        // View icons and command buttons, left aligned. Menu and Find are added at the right below.
+        // View icons and command buttons, left aligned. Find is added at the right below.
         val cmds = hbox()
         val bottom = hbox().apply { setPadding(pp(1), 0, pp(1), 0) }
 
@@ -495,8 +495,7 @@ open class MainActivity : Activity() {
         val (spaceTop, spaceBottom) = when (mode) { WEEK -> 0 to 2; MONTH -> 0 to 5; else -> 3 to 8 }
         root.addView(content, LP(MATCH, 0, 1f).apply { topMargin = pp(spaceTop); bottomMargin = pp(spaceBottom) })
         bottom.addView(cmds, LP(0, WRAP, 1f))
-        bottom.addView(ViewIcon(this, 4, false) { showMenu() })
-        bottom.addView(ViewIcon(this, 5, false) { endEdit(); showFind() }, lp().apply { marginStart = -pp(1) })
+        bottom.addView(ViewIcon(this, 5, false) { endEdit(); showFind() })
         fitButtons(bottom)
         root.addView(bottom, lp(MATCH))
         if (keepKeyboard && currentFocus?.onCheckIsTextEditor() != true) showKeyboard()

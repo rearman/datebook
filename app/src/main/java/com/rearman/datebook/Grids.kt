@@ -276,15 +276,15 @@ class MonthGrid(
 }
 
 /**
- * The icons in the bottom row: the four views (0 to 3), then Menu (4) and Find (5).
- * The four views are 9 Palm px wide and 11 tall, a full box with no inset. Menu and Find
- * are 12 wide and 13 tall, with a 1 px inset.
+ * The icons in the bottom row: the four views (0 to 3), then Find (5). Kind 4 is unused.
+ * The four views are 9 Palm px wide and 11 tall, a full box with no inset. Find is
+ * 12 wide and 13 tall, with a 1 px inset.
  */
 @SuppressLint("ViewConstructor")
 class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean, onClick: () -> Unit) : View(ctx) {
     private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = ctx.ppf(1f) }
 
-    init { setOnClickListener { onClick() }; contentDescription = listOf("Day", "Week", "Month", "Agenda", "Menu", "Find")[kind] }
+    init { setOnClickListener { onClick() }; contentDescription = if (kind == 5) "Find" else listOf("Day", "Week", "Month", "Agenda")[kind] }
 
     override fun onMeasure(w: Int, h: Int) =
         if (kind < 4) setMeasuredDimension(context.pp(9), context.pp(11))
@@ -316,10 +316,6 @@ class ViewIcon(ctx: Context, private val kind: Int, private val active: Boolean,
                 p.style = Paint.Style.STROKE
                 c.drawLine(l, t + (b - t) * 0.6f, r, t + (b - t) * 0.6f, p)
                 c.drawLine(l, t + (b - t) * 0.9f, r, t + (b - t) * 0.9f, p)
-            }
-            4 -> { // Menu: three lines
-                p.style = Paint.Style.STROKE
-                for (k in 0..2) { val y = t + (b - t) * (0.2f + 0.3f * k); c.drawLine(l, y, r, y, p) }
             }
             else -> { // Find: magnifier
                 p.style = Paint.Style.STROKE
