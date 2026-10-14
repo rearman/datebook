@@ -22,6 +22,7 @@ import android.text.format.DateFormat
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -218,6 +219,29 @@ open class MainActivity : Activity() {
         super.dispatchTouchEvent(ev)
         stepDate(swipeDir)
         return true
+    }
+
+    /**
+     * Palm behavior: a character typed with no text field selected starts a new record in the
+     * Day view, the To Do List and the Memo List. The typed text becomes its first text.
+     */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (currentFocus !is EditText) {
+            val typed = when (event.action) {
+                // A held key repeats; only its first press starts a record.
+                KeyEvent.ACTION_DOWN -> if (event.repeatCount > 0) null else event.unicodeChar.takeIf { it != 0 }?.let { String(Character.toChars(it)) }
+                KeyEvent.ACTION_MULTIPLE -> event.characters
+                else -> null
+            }
+            if (typed != null && typed.isNotEmpty() && !typed[0].isWhitespace() && !typed[0].isISOControl()) {
+                when {
+                    mode == DAY -> { typedEvent(typed); return true }
+                    mode == TODO -> { newTodo(typed); return true }
+                    mode == MEMO && memoOpen == null -> { newMemo(typed); return true }
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     /** Moves one day (Day, Agenda), one week or one month forward (1) or back (-1). */
@@ -660,9 +684,11 @@ open class MainActivity : Activity() {
             alarm = prefs.presetOn, alarmAdvance = prefs.presetAdvance, alarmUnit = prefs.presetUnit
         )
 
+    private fun defaultStart(): Int = if (day == today) minOf((java.time.LocalTime.now().hour + 1) * 60, 23 * 60) else prefs.dayStart * 60
+
     /** Palm "New": choose a time, then type the description on the new line. */
     private fun newEvent(start: Int?) {
-        val s = start ?: if (day == today) minOf((java.time.LocalTime.now().hour + 1) * 60, 23 * 60) else prefs.dayStart * 60
+        val s = start ?: defaultStart()
         TimeDialog(this, false, s, s + 60) { u, a, b ->
             val e = newEventAt(a, b, u)
             store.save(e)
@@ -671,6 +697,17 @@ open class MainActivity : Activity() {
             changed()
             showKeyboardSoon()
         }.show()
+    }
+
+    /** Palm Day view: typing with no event selected starts a new event with the typed text. */
+    private fun typedEvent(initial: String) {
+        val s = defaultStart()
+        val e = newEventAt(s, s + 60, false).apply { title = initial }
+        store.save(e)
+        selected = Occ(e, day)
+        focusKey = "e${e.id}"
+        changed()
+        showKeyboardSoon()
     }
 
     internal fun showKeyboardSoon() {
@@ -1015,9 +1052,9 @@ open class MainActivity : Activity() {
         cmds.addView(View(this), LP(0, 1, 1f))
     }
 
-    private fun newTodo() {
+    private fun newTodo(initial: String = "") {
         val cat = if (prefs.todoCategory > 0) prefs.todoCategory else 0
-        val t = Todo(priority = 1, category = cat)
+        val t = Todo(title = initial, priority = 1, category = cat)
         store.save(t)
         selectedTodo = t
         focusKey = "t${t.id}"

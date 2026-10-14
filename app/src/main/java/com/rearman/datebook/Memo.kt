@@ -151,10 +151,15 @@ internal fun MainActivity.buildMemoEdit(h: LinearLayout, content: FrameLayout, c
     cmds.addView(View(this), LP(0, 1, 1f))
 }
 
-/** Starts a new memo in the category shown in the list, then opens it for editing. */
-internal fun MainActivity.newMemo() {
+/**
+ * Starts a new memo in the category shown in the list, then opens it for editing.
+ * [initial] is text typed in the Memo List; a memo with text is saved at once.
+ */
+internal fun MainActivity.newMemo(initial: String = "") {
     endEdit()
-    memoOpen = Memo(category = if (prefs.memoCategory > 0) prefs.memoCategory else 0)
+    val m = Memo(text = initial, category = if (prefs.memoCategory > 0) prefs.memoCategory else 0)
+    if (m.text.isNotBlank()) store.save(m)
+    memoOpen = m
     render()
 }
 
