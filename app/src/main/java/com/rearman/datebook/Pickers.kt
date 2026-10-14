@@ -85,7 +85,10 @@ class DateDialog(
     }
 }
 
-/** Palm "Set Time" form: start and end boxes, hour and minute buttons, No Time. */
+/**
+ * Palm "Set Time" form: start and end boxes on the left, scrolling hour and
+ * minute lists on the right, No Time.
+ */
 class TimeDialog(
     private val ctx: Context,
     untimed: Boolean,
@@ -98,63 +101,90 @@ class TimeDialog(
     private var editingEnd = false
     private val startBox = ctx.label("", bold = true)
     private val endBox = ctx.label("", bold = true)
-    private val hourCells = mutableListOf<TextView>()
-    private val minCells = mutableListOf<TextView>()
+    private val hourValues = if (Fmt.h24) (0..23).toList() else (1..12).toList()
+    private val minValues = (0..55 step 5).toList()
+    private val hourRows = mutableListOf<TextView>()
+    private val minRows = mutableListOf<TextView>()
+    private var hourTop = 0
+    private var minTop = 0
+    // True while an arrow button scrolls a list. draw() then keeps the window as set.
+    private var scrolling = false
     private var ampm: PushGroup? = null
 
     init {
-        val boxes = ctx.hbox()
+        val left = ctx.vbox()
+        left.addView(ctx.label("Start Time:", size = Palm.text))
+        left.addView(startBox, lp(MATCH))
+        left.addView(ctx.label("End Time:", size = Palm.text), lp().apply { topMargin = ctx.pp(3) })
+        left.addView(endBox, lp(MATCH))
         for ((i, b) in listOf(startBox, endBox).withIndex()) {
-            val col = ctx.vbox()
-            col.addView(ctx.label(if (i == 0) "Start Time" else "End Time", size = Palm.text))
             b.setPadding(ctx.pp(3), ctx.pp(2.5f), ctx.pp(3), ctx.pp(2.5f))
             b.gravity = Gravity.CENTER
             b.setOnClickListener { editingEnd = i == 1; draw() }
-            col.addView(b, lp(MATCH))
-            boxes.addView(col, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.pp(3) })
         }
-        add(boxes)
 
-        add(ctx.label("Hour", bold = true, size = Palm.text), 4)
-        val hours = if (Fmt.h24) (0..23).toList() else (1..12).toList()
-        val perRow = 6
-        hours.chunked(perRow).forEach { chunk ->
-            val row = ctx.hbox()
-            chunk.forEach { h ->
-                val c = cell(if (Fmt.h24) h.toString() else h.toString()) { pickHour(h) }
-                c.tag = h
-                hourCells.add(c)
-                row.addView(c, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.pp(1); topMargin = ctx.pp(1) })
-            }
-            add(row, 0)
-        }
+        val hourCol = column(hourRows,
+            up = { scroll { hourTop = (hourTop - 1).coerceAtLeast(0) } },
+            down = { scroll { hourTop = (hourTop + 1).coerceAtMost(hourValues.size - 6) } },
+            pick = { pickHour(it) })
         if (!Fmt.h24) {
             val g = PushGroup(ctx, listOf("AM", "PM"), 0) { g -> pickAmPm(g.selected == 1) }
             ampm = g
-            add(g.view, 2)
+            hourCol.addView(g.view, lp(MATCH).apply { topMargin = ctx.pp(2) })
         }
-        add(ctx.label("Minute", bold = true, size = Palm.text), 4)
-        (0 until 12).chunked(6).forEach { chunk ->
-            val row = ctx.hbox()
-            chunk.forEach { k ->
-                val m = k * 5
-                val c = cell("%02d".format(m)) { pickMinute(m) }
-                c.tag = m
-                minCells.add(c)
-                row.addView(c, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.pp(1); topMargin = ctx.pp(1) })
-            }
-            add(row, 0)
-        }
+        val minCol = column(minRows,
+            up = { scroll { minTop = (minTop - 1).coerceAtLeast(0) } },
+            down = { scroll { minTop = (minTop + 1).coerceAtMost(minValues.size - 6) } },
+            pick = { pickMinute(it) })
+
+        val right = ctx.hbox()
+        right.addView(hourCol, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.pp(2) })
+        right.addView(minCol, LinearLayout.LayoutParams(0, WRAP, 1f))
+
+        val form = ctx.hbox(Gravity.TOP)
+        form.addView(left, LinearLayout.LayoutParams(0, WRAP, 1f).apply { marginEnd = ctx.pp(4) })
+        form.addView(right, LinearLayout.LayoutParams(0, WRAP, 1f))
+        add(form)
+
         button("OK") { dismiss(); onPick(false, s, maxOf(e, s)) }
         button("Cancel") { dismiss() }
         button("No Time") { dismiss(); onPick(true, s, e) }
         draw()
     }
 
-    private fun cell(text: String, onClick: () -> Unit) = ctx.label(text, bold = true).apply {
-        gravity = Gravity.CENTER
-        setPadding(0, ctx.pp(2.5f), 0, ctx.pp(2.5f))
-        setOnClickListener { onClick() }
+    // One list: an up arrow, 6 visible rows, a down arrow. A row click picks its value.
+    private fun column(
+        rows: MutableList<TextView>,
+        up: () -> Unit,
+        down: () -> Unit,
+        pick: (Int) -> Unit
+    ): LinearLayout = ctx.vbox().apply {
+        addView(ctx.palmButton("▲") { up() }, lp(MATCH))
+        repeat(6) {
+            val r = ctx.label("", bold = true).apply {
+                gravity = Gravity.CENTER
+                setPadding(0, ctx.pp(1), 0, ctx.pp(1))
+                setOnClickListener { (tag as? Int)?.let(pick) }
+            }
+            rows.add(r)
+            addView(r, lp(MATCH))
+        }
+        addView(ctx.palmButton("▼") { down() }, lp(MATCH))
+    }
+
+    private fun scroll(move: () -> Unit) {
+        scrolling = true
+        move()
+        draw()
+        scrolling = false
+    }
+
+    // Returns the first visible index that keeps the selected index in the 6-row window.
+    private fun reveal(index: Int, top: Int): Int = when {
+        index < 0 -> top
+        index < top -> index
+        index >= top + 6 -> index - 5
+        else -> top
     }
 
     private fun cur() = if (editingEnd) e else s
@@ -200,13 +230,27 @@ class TimeDialog(
         val v = cur()
         val h = v / 60
         val shownHour = if (Fmt.h24) h else (if (h % 12 == 0) 12 else h % 12)
-        hourCells.forEach { mark(it, it.tag == shownHour) }
-        minCells.forEach { mark(it, it.tag == (v % 60) - (v % 60) % 5) }
+        val selMin = (v % 60) - (v % 60) % 5
+        if (!scrolling) {
+            hourTop = reveal(hourValues.indexOf(shownHour), hourTop)
+            minTop = reveal(minValues.indexOf(selMin), minTop)
+        }
+        fill(hourRows, hourValues, hourTop, shownHour) { it.toString() }
+        fill(minRows, minValues, minTop, selMin) { "%02d".format(it) }
         ampm?.select(if (h >= 12) 1 else 0)
     }
 
+    private fun fill(rows: List<TextView>, values: List<Int>, top: Int, sel: Int, text: (Int) -> String) {
+        rows.forEachIndexed { i, r ->
+            val value = values.getOrNull(top + i)
+            r.tag = value
+            r.text = value?.let(text) ?: ""
+            mark(r, value == sel)
+        }
+    }
+
     private fun mark(tv: TextView, sel: Boolean) {
-        tv.background = ctx.box(if (sel) Palm.INK else Palm.paper, Palm.INK, 1f, 1f)
+        tv.background = if (sel) ctx.box(Palm.INK, Palm.INK, 0f, 0f) else null
         tv.setTextColor(if (sel) Palm.paper else Palm.INK)
     }
 }

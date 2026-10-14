@@ -71,10 +71,10 @@ object Palm {
  * larger. This shrinks each one to 0.6 of the text size.
  */
 fun symbols(s: CharSequence): CharSequence {
-    if (s.none { it == '◀' || it == '▶' || it == '▼' }) return s
+    if (s.none { it == '◀' || it == '▶' || it == '▼' || it == '▲' }) return s
     val sp = SpannableString(s)
     s.forEachIndexed { i, ch ->
-        if (ch == '◀' || ch == '▶' || ch == '▼')
+        if (ch == '◀' || ch == '▶' || ch == '▼' || ch == '▲')
             sp.setSpan(RelativeSizeSpan(0.6f), i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
     }
     return sp
