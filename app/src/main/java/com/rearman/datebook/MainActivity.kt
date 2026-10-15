@@ -559,12 +559,12 @@ open class MainActivity : Activity() {
     }
 
     /**
-     * A command button, 12 px tall at y 147. [width] is the Palm width (0 keeps the text width).
-     * [gap] is the Palm space before the button.
+     * A command button, 12 px tall at y 147, as wide as its text plus 3 px each side.
+     * [gap] is the Palm space before it.
      */
-    internal fun cmd(cmds: LinearLayout, text: String, width: Int = 0, gap: Int = 2, onClick: () -> Unit) {
-        val b = palmButton(text, width, onClick = onClick)
-        if (width == 0) b.setPadding(pp(3), 0, pp(3), 0)
+    internal fun cmd(cmds: LinearLayout, text: String, gap: Int = 4, onClick: () -> Unit) {
+        val b = palmButton(text, onClick = onClick)
+        b.setPadding(pp(3), 0, pp(3), 0)
         cmdButtons.add(b)
         cmds.addView(b, LP(WRAP, pp(12)).apply { marginStart = pp(gap) })
     }
@@ -682,8 +682,8 @@ open class MainActivity : Activity() {
         }
 
         viewIcons(cmds)
-        cmd(cmds, "New", 22, 4) { endEdit(); newEvent(null) }
-        cmd(cmds, "Details", 33, 4) {
+        cmd(cmds, "New") { endEdit(); newEvent(null) }
+        cmd(cmds, "Details") {
             endEdit()
             root.post {
                 val s = selected
@@ -691,7 +691,7 @@ open class MainActivity : Activity() {
                 else ask("Select Event", "Tap an event first, then tap Details.", "OK" to {})
             }
         }
-        cmd(cmds, "Go To", 28, 4) { endEdit(); DateDialog(this, "Go to Date", day) { d -> day = d; selected = null; render() }.show() }
+        cmd(cmds, "Go To") { endEdit(); DateDialog(this, "Go to Date", day) { d -> day = d; selected = null; render() }.show() }
     }
 
     /** A row text field. With [multiLine], Enter adds a new line (To Do items); without it, Enter ends the edit. */
@@ -845,7 +845,6 @@ open class MainActivity : Activity() {
 
         viewIcons(cmds)
         cmd(cmds, "Go To") { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
-        cmdButtons.last().setWidth(pp(28))
     }
 
     // ---------------- Month view ----------------
@@ -883,7 +882,6 @@ open class MainActivity : Activity() {
             FrameLayout.LayoutParams(MATCH, WRAP))
         viewIcons(cmds)
         cmd(cmds, "Go To") { DateDialog(this, "Go to Date", day) { x -> day = x; render() }.show() }
-        cmdButtons.last().setWidth(pp(28))
     }
 
     // ---------------- Agenda view ----------------
@@ -979,7 +977,7 @@ open class MainActivity : Activity() {
         page.addView(todoScroll, LP(MATCH, 0, 1f))
         content.addView(page, LP(MATCH, MATCH))
         viewIcons(cmds)
-        cmd(cmds, "Go To", 28, 6) { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
+        cmd(cmds, "Go To") { DateDialog(this, "Go to Date", day) { d -> day = d; render() }.show() }
     }
 
     // ---------------- To Do List ----------------
@@ -1114,7 +1112,7 @@ open class MainActivity : Activity() {
         content.addView(ScrollView(this).apply { addView(col); isFillViewport = true; isVerticalScrollBarEnabled = false })
         focusView?.let { f -> f.post { f.requestFocus(); f.setSelection(f.text.length) } }
 
-        cmd(cmds, "New") { endEdit(); newTodo() }
+        cmd(cmds, "New", gap = 0) { endEdit(); newTodo() }
         cmd(cmds, "Details...") {
             endEdit()
             root.post {
@@ -1124,15 +1122,6 @@ open class MainActivity : Activity() {
             }
         }
         cmd(cmds, "Show...") { endEdit(); showShowOptions() }
-        // Palm x 1, 33 and 82 with the Palm widths. The cmds row starts at x 1 already (bottom padding),
-        // so New has no start margin. Gaps are 6 px. Zero padding keeps the text inside the fixed width.
-        val (newB, detB, showB) = cmdButtons.takeLast(3)
-        for ((b, w) in listOf(newB to 26, detB to 43, showB to 38)) {
-            b.setWidth(pp(w)); b.setPadding(0, 0, 0, 0)
-        }
-        (newB.layoutParams as LinearLayout.LayoutParams).marginStart = 0
-        (detB.layoutParams as LinearLayout.LayoutParams).marginStart = pp(6)
-        (showB.layoutParams as LinearLayout.LayoutParams).marginStart = pp(6)
         cmds.addView(View(this), LP(0, 1, 1f))
     }
 

@@ -56,7 +56,7 @@ internal fun MainActivity.buildMemoList(h: LinearLayout, content: FrameLayout, c
     items.forEachIndexed { i, m -> col.addView(memoRow(m, i + 1, manual), lp(MATCH)) }
     withScrollBar(content, ScrollView(this).apply { addView(col); isFillViewport = true; isVerticalScrollBarEnabled = false })
 
-    memoCmd(cmds, "New", 36) { newMemo() }
+    cmd(cmds, "New", gap = 0) { newMemo() }
     cmds.addView(View(this), LP(0, 1, 1f))
 }
 
@@ -156,8 +156,8 @@ internal fun MainActivity.buildMemoEdit(h: LinearLayout, content: FrameLayout, c
     ed.post { ed.requestFocus(); ed.setSelection(ed.text.length) }
     if (m.id == 0L) showKeyboardSoon()
 
-    memoCmd(cmds, "Done", 30, onClick = done)
-    memoCmd(cmds, "Details", 37, gap = 6) { showMemoDetails(m) }
+    cmd(cmds, "Done", gap = 0, onClick = done)
+    cmd(cmds, "Details") { showMemoDetails(m) }
     cmds.addView(View(this), LP(0, 1, 1f))
 }
 
@@ -224,12 +224,6 @@ internal fun MainActivity.showMemoPreferences() {
 /** Memo Pad About box. */
 internal fun MainActivity.showMemoAbout() {
     ask("About Memo Pad", "Memo Pad, after the Palm OS 3.5 Memo Pad.", "OK" to {})
-}
-
-/** A command button at the Palm position on the bottom row: [width] Palm px, 12 px high, [gap] px after the last one. */
-private fun MainActivity.memoCmd(cmds: LinearLayout, text: String, width: Int, gap: Int = 0, onClick: () -> Unit) {
-    // Not in cmdButtons: the widths are fixed and fit, so the font shrink in fitButtons has nothing to do.
-    cmds.addView(palmButton(text, width, onClick), LP(WRAP, pp(12)).apply { marginStart = pp(gap) })
 }
 
 /** Puts [sv] in the content area with a Palm scroll bar on its right. The bar is 7 px wide. */
