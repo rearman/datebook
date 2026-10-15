@@ -952,7 +952,7 @@ open class MainActivity : Activity() {
         val textTop = pp(1) + (pp(14) - label("").lineHeight) / 2
         for (t in tds) {
             val r = hbox(Gravity.TOP).apply { isBaselineAligned = false }
-            r.addView(checkBox("", t.done) { b -> completeTodo(t, b) }, lp().apply { topMargin = pp(1) })
+            r.addView(checkBox("", t.done) { b -> completeTodo(t, b) }, lp().apply { topMargin = pp(1); marginStart = pp(2) })
             if (prefs.showPriorities) r.addView(todoPriorityLabel(t), lp().apply { topMargin = textTop })
             if (isMasked(t)) r.addView(label("").apply {
                 background = box(Palm.LIGHT, Palm.LIGHT, 0f, 1f); setOnClickListener { revealAsk(t) }
@@ -966,10 +966,10 @@ open class MainActivity : Activity() {
             }, LP(0, WRAP, 1f).apply { topMargin = textTop })
             if (prefs.showDueDates) r.addView(todoDueLabel(t, day), lp().apply { topMargin = textTop })
             if (prefs.showCategories) r.addView(todoCategoryLabel(t), lp().apply { topMargin = textTop })
-            todoCol.addView(r, lp(MATCH).apply { marginEnd = pp(7) })
+            todoCol.addView(r, lp(MATCH))
         }
         // Palm 2200: the appointment area fits its rows, up to 68 px (y 18 to 86), then the divider band,
-        // then the To Do list. The 7 px at the right are the scroll bar gap.
+        // then the To Do list. The 7 px at the right of the appointment rows are the scroll bar gap.
         val apptH = if (occs.isEmpty()) pp(16) else minOf(pp(68), occs.size * pp(11))
         val apptScroll = ScrollView(this).apply { addView(col); isVerticalScrollBarEnabled = false }
         val todoScroll = ScrollView(this).apply { addView(todoCol); isVerticalScrollBarEnabled = false }
