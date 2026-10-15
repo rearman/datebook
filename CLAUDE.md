@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Three Android apps after the Palm OS 3.5 Date Book, To Do List and Memo Pad, in one APK. Each app has its own launcher icon and task. The Date Book and To Do List apps use the same records. All three apps use the one `Store` database. Kotlin, plain Android Views (no AndroidX, no Compose, no XML layouts), no dependencies. minSdk 26, compileSdk and targetSdk 34, JDK 17.
+Three Android apps after the Palm OS 3.5 Date Book, To Do List and Memo Pad, in one APK. Each app has its own launcher icon and task. The Date Book and To Do List apps use the same records. All three apps use the one `Store` database. Kotlin, plain Android Views (no AndroidX, no Compose, no XML layouts), no dependencies. minSdk 26, compileSdk and targetSdk 34, JDK 17. Version control is jj.
 
 ## Build
 
