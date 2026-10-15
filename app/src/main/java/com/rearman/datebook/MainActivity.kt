@@ -490,9 +490,9 @@ open class MainActivity : Activity() {
 
         root.addView(header, lp(MATCH))
         root.addView(View(this).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, pp(2)))
-        // Palm content areas: 18 to 139 (Day, Agenda, To Do, Memo), 15 to 145 (Week), 15 to 142 (Month).
-        // The title line ends at 15, and the bottom row starts at 147.
-        val (spaceTop, spaceBottom) = when (mode) { WEEK -> 0 to 2; MONTH -> 0 to 5; else -> 3 to 8 }
+        // Palm content areas start at 18 (Day, Agenda, To Do, Memo) and 15 (Week, Month).
+        // The title line ends at 15. The content ends 1 px above the bottom row at 147.
+        val (spaceTop, spaceBottom) = when (mode) { WEEK, MONTH -> 0 to 1; else -> 3 to 1 }
         root.addView(content, LP(MATCH, 0, 1f).apply { topMargin = pp(spaceTop); bottomMargin = pp(spaceBottom) })
         bottom.addView(cmds, LP(0, WRAP, 1f))
         bottom.addView(ViewIcon(this, 5, false) { endEdit(); showFind() })
