@@ -129,6 +129,7 @@ open class MainActivity : Activity() {
             editor = keepKeyboard
         }
         setContentView(root)
+        window.hideStatusBar()
         handleIntent(intent)
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -144,9 +145,13 @@ open class MainActivity : Activity() {
         Alarms.scheduleNext(this)
     }
 
-    /** Opens the keyboard again on a tall screen when a dialog or another app closes. */
+    /**
+     * Hides the status bar again (Android 10 and earlier show it after a focus change), and opens the
+     * keyboard again on a tall screen when a dialog or another app closes.
+     */
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) window.hideStatusBar()
         if (hasFocus && keepKeyboard) showKeyboard()
     }
 

@@ -14,6 +14,7 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
+import android.os.Build
 import android.text.InputType
 import android.text.SpannableString
 import android.text.Spanned
@@ -24,6 +25,8 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
@@ -342,6 +345,8 @@ open class PalmDialog(ctx: Context, title: String, scroll: Boolean = true, heigh
             w.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         }
         window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        // A dialog is a window of its own: hide the status bar in it too.
+        window?.hideStatusBar()
     }
 
     /** Adds [v] to the body. [top] is the gap above [v], in Palm px. */
@@ -537,3 +542,21 @@ fun Context.frame(): FrameLayout = FrameLayout(this)
 
 @Suppress("unused")
 fun drawableOf(d: Drawable) = d
+
+/**
+ * Hides the status bar in this window. A swipe from the top edge shows it for a moment, as in
+ * full-screen apps. On a screen with a camera cutout the window stays below the cutout. Call it after
+ * setContentView, for each window that shows (the activity, the menu bar and the dialogs), and again
+ * on each activity focus: Android 10 and earlier clear the flags.
+ */
+fun Window.hideStatusBar() {
+    if (Build.VERSION.SDK_INT >= 30) {
+        insetsController?.let {
+            it.hide(WindowInsets.Type.statusBars())
+            it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    } else {
+        @Suppress("DEPRECATION")
+        decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+    }
+}

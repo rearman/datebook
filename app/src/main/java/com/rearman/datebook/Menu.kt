@@ -52,6 +52,8 @@ class MenuBar(private val act: Activity, private val menus: List<Pair<String, Li
             setGravity(Gravity.TOP)
             setLayout(MATCH, MATCH)
             clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            // The menu bar is a window of its own: hide the status bar in it too.
+            hideStatusBar()
         }
         draw()
     }
