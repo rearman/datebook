@@ -39,7 +39,7 @@ internal fun MainActivity.visibleMemos(): List<Memo> {
  * In manual sort, a long press drags a line onto another line to move it.
  */
 internal fun MainActivity.buildMemoList(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
-    tab(h, "Memo List")
+    tab(h, "Memo")
     // Palm: a 26 px trigger at the right edge. The header has a 1 px right padding, so the margin cancels it.
     val trigger = popupTrigger(categoryLabel(prefs.memoCategory)) { tv ->
         endEdit()

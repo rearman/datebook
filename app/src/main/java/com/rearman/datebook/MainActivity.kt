@@ -1065,7 +1065,7 @@ open class MainActivity : Activity() {
     }
 
     private fun buildTodo(h: LinearLayout, content: FrameLayout, cmds: LinearLayout) {
-        tab(h, "To Do List")
+        tab(h, "To Do")
         // Palm x 143 to 160, 13 px high. The name grows the trigger to the left. The header
         // has 1 px of right padding, so a -1 px end margin puts the right edge at x 160.
         h.addView(popupTrigger(categoryLabel(prefs.todoCategory)) { tv ->
