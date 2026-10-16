@@ -12,6 +12,7 @@ import android.graphics.Color
 import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -25,6 +26,7 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
@@ -212,13 +214,56 @@ open class MainActivity : Activity() {
         })
     }
 
+    /** The field in edit when a tap started on no control, until the tap ends or moves. */
+    private var tapOutside: EditText? = null
+    private var tapX = 0f
+    private var tapY = 0f
+
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        if (!swipe.onTouchEvent(ev)) return super.dispatchTouchEvent(ev)
-        // Cancel the gesture for the views under the finger, so that no tap fires.
-        ev.action = MotionEvent.ACTION_CANCEL
-        super.dispatchTouchEvent(ev)
-        stepDate(swipeDir)
-        return true
+        if (swipe.onTouchEvent(ev)) {
+            tapOutside = null
+            // Cancel the gesture for the views under the finger, so that no tap fires.
+            ev.action = MotionEvent.ACTION_CANCEL
+            super.dispatchTouchEvent(ev)
+            stepDate(swipeDir)
+            return true
+        }
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                tapX = ev.rawX
+                tapY = ev.rawY
+                tapOutside = (currentFocus as? EditText)?.takeIf { !onControl(root, ev.rawX.toInt(), ev.rawY.toInt()) }
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val slop = ViewConfiguration.get(this).scaledTouchSlop
+                if (abs(ev.rawX - tapX) > slop || abs(ev.rawY - tapY) > slop) tapOutside = null
+            }
+            MotionEvent.ACTION_CANCEL -> tapOutside = null
+        }
+        val handled = super.dispatchTouchEvent(ev)
+        if (ev.actionMasked == MotionEvent.ACTION_UP) {
+            val ed = tapOutside
+            tapOutside = null
+            // A tap on another line moved the focus there; a tap on no control ends the edit.
+            if (ed != null && currentFocus === ed) deselect()
+        }
+        return handled
+    }
+
+    /** True when a clickable view or a text field is under the screen point (x, y). */
+    private fun onControl(v: View, x: Int, y: Int): Boolean {
+        if (v.visibility != View.VISIBLE) return false
+        val r = Rect()
+        if (!v.getGlobalVisibleRect(r) || !r.contains(x, y)) return false
+        if (v !== root && (v.isClickable || v.isLongClickable || v is EditText)) return true
+        return v is ViewGroup && (0 until v.childCount).any { onControl(v.getChildAt(it), x, y) }
+    }
+
+    /** Ends the edit, which saves the text, and clears the selected event or To Do item. */
+    private fun deselect() {
+        endEdit()
+        selected = null
+        selectedTodo = null
     }
 
     /**
