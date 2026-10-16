@@ -417,9 +417,10 @@ fun Context.popupList(anchor: View, items: List<String>, selected: Int, onPick: 
     }
     pw.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
     pw.elevation = dp(4).toFloat()
-    // The visible area: above the keyboard when the keyboard shows.
+    // The visible area: above the keyboard when the keyboard shows. The list can fill all of it, and a
+    // longer list scrolls.
     val vis = Rect().also { anchor.getWindowVisibleDisplayFrame(it) }
-    val maxH = vis.height() * 2 / 3
+    val maxH = vis.height()
     sv.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
     if (sv.measuredHeight > maxH) pw.height = maxH
     // Show at the trigger, moved left or up only as far as needed to stay in the visible area.
