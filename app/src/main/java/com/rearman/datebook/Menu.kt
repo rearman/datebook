@@ -17,6 +17,7 @@ import android.view.View
 import android.view.Window
 import android.view.WindowManager
 import android.widget.FrameLayout
+import kotlin.math.ceil
 
 /** The letter of a key A to Z, or null for any other key. */
 fun commandKey(keyCode: Int): Char? =
@@ -109,6 +110,9 @@ class MenuBar(private val act: Activity, private val menus: List<Pair<String, Li
         r.addView(act.label(key.toString(), bold = true).apply {
             setTextColor(colors)
             isDuplicateParentStateEnabled = true
+            // The letters line up at the right: each one is right-aligned in the width of a "W".
+            gravity = Gravity.END
+            width = ceil(paint.measureText("W")).toInt()
         })
         return r
     }
