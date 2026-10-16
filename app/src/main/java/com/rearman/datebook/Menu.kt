@@ -110,8 +110,9 @@ class MenuBar(private val act: Activity, private val menus: List<Pair<String, Li
         r.addView(act.label(key.toString(), bold = true).apply {
             setTextColor(colors)
             isDuplicateParentStateEnabled = true
-            // The letters line up at the right: each one is right-aligned in the width of a "W".
-            gravity = Gravity.END
+            // As in Palm OS, the strokes are a fixed column and each letter is left-aligned after its stroke,
+            // in a column the width of a "W".
+            gravity = Gravity.START
             width = ceil(paint.measureText("W")).toInt()
         })
         return r
