@@ -55,7 +55,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 ### Both
 
 - The view icons at the bottom of Date Book select Day, Week, Month or Agenda.
-- A tap on the title tab opens the Record, Edit and Options menus.
+- A tap on the title tab opens the Record, Edit and Options menus, as on the Palm III. Tap outside the menus to close them. With the menus open, type a command letter (shown at the right of a command) to run that command. At any time, press Ctrl and the command letter on a keyboard.
 - Tap outside a line in edit to save it and end the edit. Tap another line to edit that line.
 - **Find** (the magnifier icon at the bottom right) searches the descriptions and notes of all records.
 - Font, Security (show, mask or hide private records) and Purge. The screen is always the Green LCD color.

@@ -3,7 +3,6 @@ package com.rearman.datebook
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -13,7 +12,6 @@ import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.Rect
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
@@ -28,7 +26,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
-import android.view.Window
 import android.view.WindowManager
 import android.view.inputmethod.BaseInputConnection
 import android.view.inputmethod.EditorInfo
@@ -271,6 +268,10 @@ open class MainActivity : Activity() {
      * Day view, the To Do List and the Memo List. The typed text becomes its first text.
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // Ctrl and a command letter runs the menu command, as the Palm command stroke does.
+        if (event.action == KeyEvent.ACTION_DOWN && event.isCtrlPressed && event.repeatCount == 0) {
+            commandKey(event.keyCode)?.let { k -> menus().command(k) }?.let { it.action(); return true }
+        }
         if (currentFocus !is EditText) {
             val typed = when (event.action) {
                 // A held key repeats; only its first press starts a record.
@@ -1198,73 +1199,76 @@ open class MainActivity : Activity() {
 
     // ---------------- Menus ----------------
 
-    private fun showMenu() {
+    private fun menus(): List<Pair<String, List<MenuItem>>> {
         val todo = mode == TODO
         val memo = mode == MEMO
-        val record: List<Pair<String, () -> Unit>> = if (memo) listOf(
-            "New Memo" to { newMemo() },
-            "Delete Memo..." to { memoOpen?.let { deleteMemoAsk(it) } ?: toast("Open a memo first.") },
-            "Export Backup..." to { exportFile("datebook-backup", store.exportJson()) },
-            "Import Backup..." to { importFile() }
+        val record: List<MenuItem> = if (memo) listOf(
+            MenuItem("New Memo", 'N') { newMemo() },
+            MenuItem("Delete Memo...", 'D') { memoOpen?.let { deleteMemoAsk(it) } ?: toast("Open a memo first.") },
+            MenuItem("Export Backup...") { exportFile("datebook-backup", store.exportJson()) },
+            MenuItem("Import Backup...") { importFile() }
         ) else if (todo) listOf(
-            "New Item" to { newTodo() },
-            "Delete Item..." to { selectedTodo?.let { deleteTodo(it) } ?: toast("Select an item first.") },
-            "Attach Note" to { selectedTodo?.let { openTodoNote(it) } ?: toast("Select an item first.") },
-            "Delete Note..." to {
+            MenuItem("New Item", 'N') { newTodo() },
+            MenuItem("Delete Item...", 'D') { selectedTodo?.let { deleteTodo(it) } ?: toast("Select an item first.") },
+            MenuItem("Attach Note", 'A') { selectedTodo?.let { openTodoNote(it) } ?: toast("Select an item first.") },
+            MenuItem("Delete Note...", 'O') {
                 selectedTodo?.let { t ->
                     if (t.note.isEmpty()) toast("This item has no note.")
                     else ask("Delete Note", "Delete the note?", "Yes" to { t.note = ""; store.save(t); render() }, "No" to {})
                 } ?: toast("Select an item first.")
             },
-            "Purge..." to { showPurgeTodos() },
-            "Export Backup..." to { exportFile("datebook-backup", store.exportJson()) },
-            "Import Backup..." to { importFile() }
+            MenuItem("Purge...", 'E') { showPurgeTodos() },
+            MenuItem("Export Backup...") { exportFile("datebook-backup", store.exportJson()) },
+            MenuItem("Import Backup...") { importFile() }
         ) else listOf(
-            "New Event" to { if (mode != DAY) { mode = DAY; render() }; newEvent(null) },
-            "Delete Event..." to { selected?.let { deleteEvent(it.event, it.day) } ?: toast("Select an event first.") },
-            "Attach Note" to { selected?.let { openNote(it) } ?: toast("Select an event first.") },
-            "Delete Note..." to {
+            MenuItem("New Event", 'N') { if (mode != DAY) { mode = DAY; render() }; newEvent(null) },
+            MenuItem("Delete Event...", 'D') { selected?.let { deleteEvent(it.event, it.day) } ?: toast("Select an event first.") },
+            MenuItem("Attach Note", 'A') { selected?.let { openNote(it) } ?: toast("Select an event first.") },
+            MenuItem("Delete Note...", 'O') {
                 selected?.let { o ->
                     if (o.event.note.isEmpty()) toast("This event has no note.")
                     else ask("Delete Note", "Delete the note?", "Yes" to { o.event.note = ""; store.save(o.event); render() }, "No" to {})
                 } ?: toast("Select an event first.")
             },
-            "Purge..." to { showPurgeEvents() },
-            "Export Backup..." to { exportFile("datebook-backup", store.exportJson()) },
-            "Import Backup..." to { importFile() }
+            MenuItem("Purge...", 'E') { showPurgeEvents() },
+            MenuItem("Export Backup...") { exportFile("datebook-backup", store.exportJson()) },
+            MenuItem("Import Backup...") { importFile() }
         )
         val ed = lastEdit
-        val edit: List<Pair<String, () -> Unit>> = listOf(
-            "Undo" to { textOp(ed, android.R.id.undo) },
-            "Cut" to { textOp(ed, android.R.id.cut) },
-            "Copy" to { textOp(ed, android.R.id.copy) },
-            "Paste" to { textOp(ed, android.R.id.paste) },
-            "Select All" to { textOp(ed, android.R.id.selectAll) },
-            "Keyboard" to {
+        val edit: List<MenuItem> = listOf(
+            MenuItem("Undo", 'U') { textOp(ed, android.R.id.undo) },
+            MenuItem("Cut", 'X') { textOp(ed, android.R.id.cut) },
+            MenuItem("Copy", 'C') { textOp(ed, android.R.id.copy) },
+            MenuItem("Paste", 'P') { textOp(ed, android.R.id.paste) },
+            MenuItem("Select All", 'S') { textOp(ed, android.R.id.selectAll) },
+            MenuItem("Keyboard", 'K') {
                 ed?.let { it.requestFocus(); getSystemService(InputMethodManager::class.java).showSoftInput(it, 0) }
                     ?: toast("Tap a line of text first.")
             }
         )
-        val options: List<Pair<String, () -> Unit>> = if (memo) listOf(
-            "Font..." to { showFont() },
-            "Preferences..." to { showMemoPreferences() },
-            "Edit Categories..." to { showEditCategories(1) },
-            "Security..." to { showSecurity() },
-            "About Memo Pad" to { showMemoAbout() }
+        val options: List<MenuItem> = if (memo) listOf(
+            MenuItem("Font...", 'F') { showFont() },
+            MenuItem("Preferences...", 'R') { showMemoPreferences() },
+            MenuItem("Edit Categories...") { showEditCategories(1) },
+            MenuItem("Security...", 'H') { showSecurity() },
+            MenuItem("About Memo Pad") { showMemoAbout() }
         ) else if (todo) listOf(
-            "Font..." to { showFont() },
-            "Edit Categories..." to { showEditCategories() },
-            "Security..." to { showSecurity() },
-            "About To Do List" to { showAbout(true) }
+            MenuItem("Font...", 'F') { showFont() },
+            MenuItem("Edit Categories...") { showEditCategories() },
+            MenuItem("Security...", 'H') { showSecurity() },
+            MenuItem("About To Do List") { showAbout(true) }
         ) else listOf(
-            "Font..." to { showFont() },
-            "Preferences..." to { showPreferences() },
-            "Display Options..." to { showDisplayOptions() },
-            "Security..." to { showSecurity() },
-            "About Date Book" to { showAbout(false) }
+            MenuItem("Font...", 'F') { showFont() },
+            MenuItem("Preferences...", 'R') { showPreferences() },
+            MenuItem("Display Options...", 'Y') { showDisplayOptions() },
+            MenuItem("Security...", 'H') { showSecurity() },
+            MenuItem("About Date Book") { showAbout(false) }
         )
-        MenuBar(this, listOf("Record" to record, "Edit" to edit, "Options" to options)).show()
+        return listOf("Record" to record, "Edit" to edit, "Options" to options)
     }
+
+    /** The Palm menu bar of this screen. A tap on the title tab opens it. */
+    private fun showMenu() = MenuBar(this, menus()).show()
 
     private fun textOp(ed: EditText?, id: Int) {
         if (ed == null) { toast("Tap a line of text first."); return }
@@ -1489,52 +1493,6 @@ class TimeBar(
             c.drawLine(x, top, x, maxOf(top, bot), p)
             if (startsHere) c.drawLine(x, top, xe, top, p)
             if (endsHere) c.drawLine(x, maxOf(top, bot), xe, maxOf(top, bot), p)
-        }
-    }
-}
-
-/** Palm menu bar: menu titles across the top, the open menu's commands below. */
-class MenuBar(
-    private val act: Activity,
-    private val menus: List<Pair<String, List<Pair<String, () -> Unit>>>>
-) : Dialog(act) {
-    private val titles = act.hbox()
-    private val items = act.vbox()
-    private var open = 0
-
-    init {
-        requestWindowFeature(Window.FEATURE_NO_TITLE)
-        val frame = act.vbox().apply {
-            background = act.box(Palm.paper, Palm.INK, 1f, 1.5f)
-            setPadding(act.pp(1), act.pp(1), act.pp(1), act.pp(1.5f))
-        }
-        frame.addView(titles, lp(MATCH))
-        frame.addView(View(act).apply { setBackgroundColor(Palm.INK) }, LP(MATCH, act.pp(1)))
-        frame.addView(items, lp(MATCH))
-        // The menu fills the app area. A tap below the commands closes it.
-        frame.addView(View(act).apply { setOnClickListener { dismiss() } }, LP(MATCH, 0, 1f))
-        setContentView(frame)
-        window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        window?.setGravity(Gravity.TOP)
-        window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        draw()
-    }
-
-    private fun draw() {
-        titles.removeAllViews()
-        menus.forEachIndexed { i, (name, _) ->
-            titles.addView(act.label(name, bold = true).apply {
-                setPadding(act.pp(5), act.pp(3), act.pp(5), act.pp(3))
-                if (i == open) { setBackgroundColor(Palm.INK); setTextColor(Palm.paper) }
-                setOnClickListener { open = i; draw() }
-            })
-        }
-        items.removeAllViews()
-        for ((name, action) in menus[open].second) {
-            items.addView(act.label(name).apply {
-                setPadding(act.pp(6.5f), act.pp(3.5f), act.pp(6.5f), act.pp(3.5f))
-                setOnClickListener { dismiss(); action() }
-            }, lp(MATCH))
         }
     }
 }
