@@ -123,12 +123,10 @@ private fun menuBox(ctx: Context): Drawable {
     }
 }
 
-/** The Palm command stroke before a command letter: a short hook at the foot of a long slash. */
+/** The Palm command stroke before a command letter: a diagonal line up to the right from a dot at its foot. */
 private class CommandStroke(ctx: Context, private val colors: ColorStateList) : View(ctx) {
     private val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = ctx.ppf(1.5f)
-        strokeCap = Paint.Cap.ROUND
+        strokeWidth = ctx.ppf(1f)
     }
 
     init {
@@ -145,7 +143,8 @@ private class CommandStroke(ctx: Context, private val colors: ColorStateList) : 
     override fun onDraw(c: Canvas) {
         p.color = colors.getColorForState(drawableState, Palm.INK)
         val u = context.ppf(1f)
-        c.drawLine(1f * u, 6f * u, 2.5f * u, 8f * u, p)
-        c.drawLine(2.5f * u, 8f * u, 6f * u, 1f * u, p)
+        // The dot: 2 by 2 Palm px at the lower left. The line: from the dot to the top right.
+        c.drawRect(0f, 7f * u, 2f * u, 9f * u, p)
+        c.drawLine(1.5f * u, 7.5f * u, 6.5f * u, 0.5f * u, p)
     }
 }
