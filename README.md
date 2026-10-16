@@ -58,7 +58,7 @@ The project has a fixed signing key (`app/debug.keystore`). Thus a new build ins
 - A tap on the title tab opens the Record, Edit and Options menus.
 - Tap outside a line in edit to save it and end the edit. Tap another line to edit that line.
 - **Find** (the magnifier icon at the bottom right) searches the descriptions and notes of all records.
-- Font, Security (show, mask or hide private records), Purge, and a Green LCD screen option.
+- Font, Security (show, mask or hide private records) and Purge. The screen is always the Green LCD color.
 - All screens use the proportions of the Palm IIIxe: the screen width is 160 Palm pixels, and the Font option selects the Palm small, normal or large font size. Select Font shows three A buttons (small, normal and large) and no sample text. All text uses the Palm OS font.
 - On a screen that is taller than it is wide, the keyboard stays open below the app, and the app uses the area above the keyboard. On a square screen, the keyboard opens only when you select a line of text.
 - Export Backup and Import Backup save and load all records as a JSON file.

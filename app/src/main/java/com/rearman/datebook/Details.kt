@@ -223,13 +223,9 @@ fun MainActivity.showDisplayOptions() {
     placeForm(area, timed, 2, 83, WRAP, 14)
     placeForm(area, untimed, 2, 97, WRAP, 14)
     placeForm(area, daily, 2, 111, WRAP, 14)
-    // A Screen row at y 125 would overlap the buttons at y 131, so the group sits beside the Day View heading.
-    val screen = PushGroup(this, listOf("White", "Green LCD"), if (prefs.greenScreen) 1 else 0, widths = listOf(30, 56))
-    placeForm(area, screen.view, 60, 18, WRAP, 11)
     d.button("OK", 36) {
         prefs.timeBars = bars.isChecked; prefs.compress = comp.isChecked
         prefs.monthTimed = timed.isChecked; prefs.monthUntimed = untimed.isChecked; prefs.monthDaily = daily.isChecked
-        prefs.greenScreen = screen.selected == 1
         d.dismiss(); render()
     }
     d.button("Cancel", 36) { d.dismiss() }

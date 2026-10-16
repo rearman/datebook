@@ -38,12 +38,13 @@ import android.widget.TextView
 import android.widget.Toast
 import kotlin.math.roundToInt
 
-/** Palm OS look: black ink on a white (or green LCD) screen, with grays for shading. */
+/** Palm OS look: black ink on a green LCD screen, with grays for shading. */
 object Palm {
     const val INK = Color.BLACK
     const val GRAY = 0xFF808080.toInt()
     const val LIGHT = 0xFFC4C4C4.toInt()
-    var paper = Color.WHITE
+    /** The Green LCD paper color. The launcher copies it (palm-launcher MainActivity.paper). */
+    val paper = 0xFFC9D3A8.toInt()
     /** Text size in Palm pixels. 16 draws the Palm OS font at one font pixel per Palm pixel, with an 11 px line. */
     var text = 16f
 
@@ -61,7 +62,6 @@ object Palm {
     }
 
     fun apply(p: Prefs) {
-        paper = if (p.greenScreen) 0xFFC9D3A8.toInt() else Color.WHITE
         text = when (p.font) { 0 -> 13f; 2 -> 20f; else -> 16f }
     }
 }

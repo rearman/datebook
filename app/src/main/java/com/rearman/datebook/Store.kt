@@ -401,7 +401,6 @@ class Prefs(ctx: Context) {
     var monthTimed: Boolean get() = bool("monthTimed", true); set(v) = setBool("monthTimed", v)
     var monthUntimed: Boolean get() = bool("monthUntimed", true); set(v) = setBool("monthUntimed", v)
     var monthDaily: Boolean get() = bool("monthDaily", true); set(v) = setBool("monthDaily", v)
-    var greenScreen: Boolean get() = bool("green", false); set(v) = setBool("green", v)
 
     // Font: 0 small, 1 normal, 2 large
     var font: Int get() = int("font", 1); set(v) = setInt("font", v)
